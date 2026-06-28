@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FocusVisk.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260628024249_InitialCreate")]
+    [Migration("20260628032743_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
