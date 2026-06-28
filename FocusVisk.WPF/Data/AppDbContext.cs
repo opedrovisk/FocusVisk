@@ -15,7 +15,6 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Seed de configurações padrão
         modelBuilder.Entity<AppSettings>().HasData(new AppSettings { Id = 1 });
     }
 }
