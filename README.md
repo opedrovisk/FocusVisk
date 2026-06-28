@@ -16,7 +16,6 @@ Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor
 - [Serviços](#serviços)
 - [Funcionalidades](#funcionalidades)
 - [Pré-requisitos](#pré-requisitos)
-- [Configuração e Execução](#configuração-e-execução)
 - [Observações Importantes](#observações-importantes)
 
 ---
