@@ -133,36 +133,42 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Cards com sessões do dia, streak de dias seguidos, tarefas concluídas hoje e tarefas pendentes
 - Gráfico de barras das sessões Pomodoro dos últimos 7 dias
 - Listagem rápida de tarefas pendentes
-  <img width="1082" height="678" alt="image" src="https://github.com/user-attachments/assets/ca7d9497-c72f-4e06-ad3c-08058a774828" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/88dcda39-5b70-4f75-a12e-009ae9bfd80e" />
+
 **Tarefas**
 - Cadastro com título, descrição, prioridade (`Low / Medium / High`), tag e prazo
 - Filtros por status (todas, pendentes, concluídas) e prioridade
 - Toggle de conclusão e exclusão
-<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/9aaeb4a1-9458-4de8-9365-caebef4f6aef" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/a70c5139-2157-472e-aec2-a01bc07c0d5f" />
+
 **Pomodoro**
 - Timer configurável com fases de foco, pausa curta e pausa longa
 - Skip e reset de fase
 - Persistência automática de sessões concluídas
 - Integração com `FocusBlockerService` para bloquear sites durante o foco
-<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/103a0fa9-60ca-479a-a7c1-4157614ec792" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/b91ce9a1-9548-470d-8bfb-f55f0904922e" />
+
 **Calendário**
 - Navegação mensal
 - Anotações por dia com cor customizável
-<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/704a24ee-e0fe-443f-920e-bc2bfb18b33d" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/4f08be83-aa27-4dfa-809f-752bb4159586" />
+
 **Notas Rápidas**
 - Criação e edição inline
 - Fixação de notas ao topo
-<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/84619ed1-f95d-4eb3-b912-3a00ad0770f0" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/510b1a05-93ca-49f7-9863-8f7f7fca45a5" />
+
 **Configurações**
 - Duração das fases do Pomodoro
 - Ativar/desativar bloqueio de sites e editar lista de sites bloqueados
 - Alternância entre tema claro e escuro
 - Customização de cor de destaque e cores de fundo
-<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/ae68d839-7d9b-419a-8bc3-14ae43167926" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/f6cc96e8-9896-4686-8ba4-0790f7db181a" />
+
 **System Tray**
 - Aplicação minimiza para a bandeja do sistema
 - Menu de contexto com opções de restauração e encerramento
-<img width="234" height="174" alt="image" src="https://github.com/user-attachments/assets/1af85998-f49c-43ff-ae89-073463b5caa3" />
+<img width="336" height="223" alt="image" src="https://github.com/user-attachments/assets/06de44b5-0fa2-4019-b340-ee9a5c179c03" />
 
 ---
 
