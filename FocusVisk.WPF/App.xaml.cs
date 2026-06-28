@@ -21,7 +21,7 @@ public partial class App : Application
 
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.Database.EnsureCreated();
+        db.Database.Migrate();
 
         var mainWindow = Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
@@ -29,16 +29,9 @@ public partial class App : Application
 
     private static void ConfigureServices(ServiceCollection services)
     {
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "FocusVisk",
-            "focus.db"
-        );
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite($"Data Source={dbPath}"),
-            ServiceLifetime.Transient);
+    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=FocusViskDb;Trusted_Connection=True;"),
+    ServiceLifetime.Transient);
 
         services.AddSingleton<PomodoroService>();
         services.AddSingleton<TaskService>();
