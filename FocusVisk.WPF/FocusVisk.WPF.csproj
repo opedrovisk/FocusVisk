@@ -45,12 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Pages\" />
-    <Folder Include="Services\" />
-    <Folder Include="Shared\" />
     <Folder Include="Themes\" />
-    <Folder Include="wwwroot\css\" />
-    <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
 </Project>

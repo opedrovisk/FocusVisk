@@ -1,0 +1,62 @@
+@using FocusVisk.Pages
+@using FocusVisk.Shared
+@inject ThemeService ThemeSvc
+@inject IJSRuntime JS
+
+<div class="app-shell">
+    <Sidebar CurrentPage="@_currentPage" OnNavigate="NavigateTo" />
+
+    <main class="main-content">
+        @switch (_currentPage)
+        {
+            case "dashboard":
+                <Dashboard />
+                break;
+            case "tasks":
+                <TodoPage />
+                break;
+            case "pomodoro":
+                <PomodoroPage />
+                break;
+            case "calendar":
+                <CalendarPage />
+                break;
+            case "notes":
+                <NotesPage />
+                break;
+            case "settings":
+                <SettingsPage />
+                break;
+            default:
+                <Dashboard />
+                break;
+        }
+    </main>
+</div>
+
+@code {
+    private string _currentPage = "dashboard";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ThemeSvc.LoadAsync();
+        ThemeSvc.OnThemeChanged += async () =>
+        {
+            await ApplyThemeAsync();
+            await InvokeAsync(StateHasChanged);
+        };
+        await ApplyThemeAsync();
+    }
+
+    private async Task ApplyThemeAsync()
+    {
+        var css = ThemeSvc.BuildCssVariables();
+        await JS.InvokeVoidAsync("focusApp.setThemeVars", css);
+    }
+
+    private void NavigateTo(string page)
+    {
+        _currentPage = page;
+        StateHasChanged();
+    }
+}

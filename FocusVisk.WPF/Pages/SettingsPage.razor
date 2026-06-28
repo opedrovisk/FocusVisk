@@ -1,0 +1,250 @@
+@inject PomodoroService     Pomodoro
+@inject FocusBlockerService Blocker
+@inject ThemeService        ThemeSvc
+
+<div class="page-header">
+    <h1 class="page-title">Configurações</h1>
+</div>
+
+<div style="max-width: 620px;" class="flex-col gap-4">
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:18px;"><i class="fa-solid fa-clock"></i> Pomodoro</h2>
+        <div class="grid-2">
+            <div>
+                <label class="text-sm text-muted">Foco (minutos)</label>
+                <input type="number" class="input mt-1" min="1" max="120" @bind="_focusMin"/>
+            </div>
+            <div>
+                <label class="text-sm text-muted">Pausa curta (minutos)</label>
+                <input type="number" class="input mt-1" min="1" max="60" @bind="_shortMin"/>
+            </div>
+            <div>
+                <label class="text-sm text-muted">Pausa longa (minutos)</label>
+                <input type="number" class="input mt-1" min="1" max="60" @bind="_longMin"/>
+            </div>
+            <div>
+                <label class="text-sm text-muted">Sessões antes da pausa longa</label>
+                <input type="number" class="input mt-1" min="2" max="8" @bind="_sessionsBeforeLong"/>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 mt-4">
+            <button class="btn btn-primary" @onclick="SavePomodoro">Salvar configurações</button>
+            @if (_pomodoroSaved)
+            {
+                <span class="badge badge-green">✓ Salvo!</span>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h2 style="font-size:15px; font-weight:600;"><i class="fa-solid fa-ban"></i> Bloqueio de foco</h2>
+                <p class="text-sm text-muted mt-1">Bloqueia sites durante o Pomodoro</p>
+            </div>
+            <span class="badge @(Blocker.IsBlocking ? "badge-coral" : "badge-teal")">
+                @(Blocker.IsBlocking
+                    ? (MarkupString)"<i class='fa-solid fa-lock'></i> Ativo"
+                    : (MarkupString)"<i class='fa-solid fa-lock-open'></i> Inativo")
+            </span>
+        </div>
+
+        <label class="text-sm text-muted">Sites a bloquear (um por linha)</label>
+        <textarea class="textarea mt-1" rows="5" @bind="_blockedSites"
+                  placeholder="youtube.com&#10;twitter.com&#10;instagram.com"></textarea>
+
+        @if (!string.IsNullOrEmpty(_blockerError))
+        {
+            <div style="margin-top:8px; padding:10px 14px; background: rgba(240,112,112,0.1);
+                        border: 1px solid rgba(240,112,112,0.3); border-radius: var(--radius-md);
+                        color: var(--accent-coral); font-size:13px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> @_blockerError
+            </div>
+        }
+
+        <div class="flex gap-2 mt-3">
+            <button class="btn btn-primary" @onclick="ApplyBlock"
+                    disabled="@Blocker.IsBlocking">Ativar bloqueio</button>
+            <button class="btn btn-ghost"   @onclick="RemoveBlock"
+                    disabled="@(!Blocker.IsBlocking)">Desativar</button>
+        </div>
+        <p class="text-sm text-muted mt-2">
+            <i class="fa-solid fa-triangle-exclamation"></i> Requer execução como Administrador para modificar o arquivo hosts.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:18px;">
+            <i class="fa-solid fa-palette"></i> Aparência
+        </h2>
+
+        <label class="text-sm text-muted">Tema</label>
+        <div class="flex gap-2 mt-1 mb-4">
+            <button class="btn @(ThemeSvc.Theme == "dark"   ? "btn-primary" : "btn-ghost")"
+                    @onclick='() => SetPreset("dark")'>
+                <i class="fa-solid fa-moon"></i> Escuro
+            </button>
+            <button class="btn @(ThemeSvc.Theme == "light"  ? "btn-primary" : "btn-ghost")"
+                    @onclick='() => SetPreset("light")'>
+                <i class="fa-solid fa-sun"></i> Claro
+            </button>
+            <button class="btn @(ThemeSvc.Theme == "custom" ? "btn-primary" : "btn-ghost")"
+                    @onclick="ShowCustom">
+                <i class="fa-solid fa-sliders"></i> Personalizado
+            </button>
+        </div>
+
+        @if (_showCustomColors)
+        {
+            <div class="grid-3 mb-4">
+                <div>
+                    <label class="text-sm text-muted">Cor de destaque</label>
+                    <div class="flex gap-2 mt-1 items-center">
+                        <input type="color" value="@_accentColor"
+                               @oninput="e => _accentColor = e.Value?.ToString() ?? _accentColor"
+                               style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+                                      cursor:pointer; background:none; padding:0;" />
+                        <input class="input" @bind="_accentColor"
+                               placeholder="#7C6AF7" style="flex:1;" />
+                    </div>
+                    <p class="text-sm text-muted mt-1">Sidebar ativa, botões, foco</p>
+                </div>
+
+                <div>
+                    <label class="text-sm text-muted">Fundo da sidebar</label>
+                    <div class="flex gap-2 mt-1 items-center">
+                        <input type="color" value="@_sidebarColor"
+                               @oninput="e => _sidebarColor = e.Value?.ToString() ?? _sidebarColor"
+                               style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+                                      cursor:pointer; background:none; padding:0;" />
+                        <input class="input" @bind="_sidebarColor"
+                               placeholder="#16161E" style="flex:1;" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm text-muted">Fundo principal</label>
+                    <div class="flex gap-2 mt-1 items-center">
+                        <input type="color" value="@_mainBgColor"
+                               @oninput="e => _mainBgColor = e.Value?.ToString() ?? _mainBgColor"
+                               style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+                                      cursor:pointer; background:none; padding:0;" />
+                        <input class="input" @bind="_mainBgColor"
+                               placeholder="#0F0F14" style="flex:1;" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button class="btn btn-primary" @onclick="ApplyCustom">
+                    <i class="fa-solid fa-check"></i> Aplicar
+                </button>
+                @if (_themeSaved)
+                {
+                    <span class="badge badge-green">✓ Tema aplicado!</span>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> Sobre o FocusVisk</h2>
+        <p class="text-sm text-muted">Versão 1.0.0</p>
+        <p class="text-sm text-muted">.NET 8 · Blazor Hybrid · WPF · SQLite</p>
+        <p class="text-sm text-muted mt-2">
+            Banco de dados em:
+            <span class="font-mono" style="font-size:11px; color: var(--text-secondary);">
+                %AppData%\FocusVisk\focus.db
+            </span>
+        </p>
+    </div>
+</div>
+
+@code {
+    private int  _focusMin          = 25;
+    private int  _shortMin          = 5;
+    private int  _longMin           = 15;
+    private int  _sessionsBeforeLong = 4;
+    private bool _pomodoroSaved;
+
+    private string  _blockedSites = "youtube.com\nx.com\ninstagram.com\nreddit.com";
+    private string? _blockerError;
+
+    private bool   _showCustomColors;
+    private string _accentColor  = "#7C6AF7";
+    private string _sidebarColor = "#16161E";
+    private string _mainBgColor  = "#0F0F14";
+    private bool   _themeSaved;
+
+    protected override void OnInitialized()
+    {
+        _focusMin           = Pomodoro.FocusDurationMinutes;
+        _shortMin           = Pomodoro.ShortBreakMinutes;
+        _longMin            = Pomodoro.LongBreakMinutes;
+        _sessionsBeforeLong = Pomodoro.SessionsBeforeLongBreak;
+
+        _accentColor  = ThemeSvc.AccentColor;
+        _sidebarColor = ThemeSvc.SidebarBgColor;
+        _mainBgColor  = ThemeSvc.MainBgColor;
+        _showCustomColors = ThemeSvc.Theme == "custom";
+    }
+
+    private async Task SavePomodoro()
+    {
+        Pomodoro.UpdateSettings(_focusMin, _shortMin, _longMin, _sessionsBeforeLong);
+        _pomodoroSaved = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _pomodoroSaved = false;
+        StateHasChanged();
+    }
+
+    private async Task ApplyBlock()
+    {
+        _blockerError = null;
+        try
+        {
+            var sites = _blockedSites.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            await Blocker.BlockAsync(sites);
+        }
+        catch (Exception ex) { _blockerError = ex.Message; }
+        StateHasChanged();
+    }
+
+    private async Task RemoveBlock()
+    {
+        _blockerError = null;
+        try { await Blocker.UnblockAsync(); }
+        catch (Exception ex) { _blockerError = ex.Message; }
+        StateHasChanged();
+    }
+
+    private async Task SetPreset(string preset)
+    {
+        _showCustomColors = false;
+        await ThemeSvc.SetPresetAsync(preset);
+        ShowSaved();
+    }
+
+    private void ShowCustom()
+    {
+        _showCustomColors = true;
+        StateHasChanged();
+    }
+
+    private async Task ApplyCustom()
+    {
+        await ThemeSvc.SetCustomAsync(_accentColor, _sidebarColor, _mainBgColor);
+        ShowSaved();
+    }
+
+    private async void ShowSaved()
+    {
+        _themeSaved = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _themeSaved = false;
+        StateHasChanged();
+    }
+}

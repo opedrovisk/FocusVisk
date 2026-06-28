@@ -1,0 +1,184 @@
+@inject CalendarService CalSvc
+@implements IDisposable
+
+<div class="page-header flex justify-between items-center">
+    <div>
+        <h1 class="page-title">Calendário</h1>
+        <p class="page-subtitle">@_currentDate.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"))</p>
+    </div>
+    <div class="flex gap-2">
+        <button class="btn btn-ghost btn-icon" @onclick="PrevMonth"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="btn btn-ghost" @onclick="GoToday">Hoje</button>
+        <button class="btn btn-ghost btn-icon" @onclick="NextMonth"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start;">
+
+    <div class="card">
+        <div class="calendar-grid" style="margin-bottom:8px;">
+            @foreach (var h in new[] {"Dom","Seg","Ter","Qua","Qui","Sex","Sáb"})
+            {
+                <div class="calendar-day-header">@h</div>
+            }
+        </div>
+        <div class="calendar-grid">
+            @foreach (var day in _calendarDays)
+            {
+                var d = day;
+                var isToday    = d.Date == DateTime.Today;
+                var isSelected = d.Date == _selected.Date;
+                var isOther    = d.Month != _currentDate.Month;
+                var hasNotes   = _noteDates.Contains(d.Date);
+
+                <div class="calendar-day @(isToday ? "today" : "") @(isSelected ? "selected" : "") @(isOther ? "other-month" : "")"
+                     @onclick="() => SelectDay(d)">
+                    @d.Day
+                    @if (hasNotes && !isSelected)
+                    {
+                        <div class="calendar-dot"></div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="flex-col gap-3">
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3 style="font-size:14px; font-weight:600;">
+                    @_selected.ToString("dd 'de' MMMM", new System.Globalization.CultureInfo("pt-BR"))
+                </h3>
+                <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;"
+                        @onclick="NewNote"><i class="fa-solid fa-plus"></i> Nota</button>
+            </div>
+
+            @if (_showNoteForm)
+            {
+                <div class="flex-col gap-2 mb-4">
+                    <textarea class="textarea" placeholder="Escreva sua anotação..."
+                              @bind="_noteContent" style="min-height:90px;"></textarea>
+                    <div class="flex gap-2">
+                        <button class="btn btn-primary" style="flex:1;" @onclick="SaveNote">Salvar</button>
+                        <button class="btn btn-ghost" @onclick="() => _showNoteForm = false">Cancelar</button>
+                    </div>
+                </div>
+            }
+
+            @if (_dayNotes.Count == 0 && !_showNoteForm)
+            {
+                <div class="text-center text-muted" style="padding: 24px 0;">
+                    <p style="font-size: 24px; margin-bottom: 8px;"><i class="fa-regular fa-clipboard icon-xl"></i></p>
+                    <p class="text-sm">Nenhuma anotação para este dia.</p>
+                </div>
+            }
+
+            @foreach (var note in _dayNotes)
+            {
+                var n = note;
+                <div style="background: var(--bg-elevated);
+                            border-left: 3px solid @(n.Color ?? "var(--accent-purple)");
+                            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+                            padding: 10px 14px; margin-bottom: 8px;">
+                    <p style="font-size: 13.5px; white-space: pre-wrap;">@n.Content</p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-sm text-muted">@n.CreatedAt.ToString("HH:mm")</span>
+                        <button class="btn btn-danger btn-icon" style="font-size:11px; padding:3px 7px;"
+                                @onclick="() => DeleteNote(n.Id)">✕</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime _selected    = DateTime.Today;
+    private DateTime _currentDate = DateTime.Today;
+
+    private List<DateTime>    _calendarDays = new();
+    private List<CalendarNote> _dayNotes    = new();
+    private HashSet<DateTime>  _noteDates   = new();
+
+    private bool   _showNoteForm;
+    private string _noteContent = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        CalSvc.OnChanged += HandleChanged;
+        BuildCalendar();
+        await RefreshAsync();
+    }
+
+    private async void HandleChanged()
+    {
+        await RefreshAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void BuildCalendar()
+    {
+        _calendarDays.Clear();
+        var first = new DateTime(_currentDate.Year, _currentDate.Month, 1);
+        var start = first.AddDays(-(int)first.DayOfWeek);
+        for (int i = 0; i < 42; i++)
+            _calendarDays.Add(start.AddDays(i));
+    }
+
+    private async Task RefreshAsync()
+    {
+        var monthNotes = await CalSvc.GetForMonthAsync(_currentDate.Year, _currentDate.Month);
+        _noteDates = monthNotes.Select(n => n.Date.Date).ToHashSet();
+        _dayNotes  = await CalSvc.GetForDayAsync(_selected);
+    }
+
+    private async Task SelectDay(DateTime day)
+    {
+        _selected     = day;
+        _showNoteForm = false;
+        _dayNotes     = await CalSvc.GetForDayAsync(day);
+    }
+
+    private void PrevMonth()
+    {
+        _currentDate = _currentDate.AddMonths(-1);
+        BuildCalendar();
+        _ = RefreshAsync();
+        StateHasChanged();
+    }
+
+    private void NextMonth()
+    {
+        _currentDate = _currentDate.AddMonths(1);
+        BuildCalendar();
+        _ = RefreshAsync();
+        StateHasChanged();
+    }
+
+    private void GoToday()
+    {
+        _selected    = DateTime.Today;
+        _currentDate = DateTime.Today;
+        BuildCalendar();
+        _ = RefreshAsync();
+        StateHasChanged();
+    }
+
+    private void NewNote() { _noteContent = ""; _showNoteForm = true; }
+
+    private async Task SaveNote()
+    {
+        if (string.IsNullOrWhiteSpace(_noteContent)) return;
+        await CalSvc.SaveAsync(new CalendarNote
+        {
+            Date    = _selected.Date,
+            Content = _noteContent.Trim()
+        });
+        _noteContent  = "";
+        _showNoteForm = false;
+    }
+
+    private async Task DeleteNote(int id) => await CalSvc.DeleteAsync(id);
+
+    public void Dispose() => CalSvc.OnChanged -= HandleChanged;
+}

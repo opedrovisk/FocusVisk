@@ -1,0 +1,197 @@
+@inject TaskService TaskSvc
+@implements IDisposable
+
+<div class="page-header flex justify-between items-center">
+    <div>
+        <h1 class="page-title">Tarefas</h1>
+        <p class="page-subtitle">@_pending pendentes · @_done concluídas</p>
+    </div>
+    <button class="btn btn-primary" @onclick="OpenNewTask"><i class="fa-solid fa-plus"></i> Nova tarefa</button>
+</div>
+
+@if (_showForm)
+{
+    <div class="card mb-4">
+        <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">
+            @(_editItem?.Id > 0 ? "Editar tarefa" : "Nova tarefa")
+        </h3>
+        <div class="flex-col gap-3">
+            <input class="input" placeholder="Título da tarefa..." @bind="_formTitle" />
+            <textarea class="textarea" placeholder="Descrição (opcional)..." @bind="_formDescription" style="min-height:72px;"></textarea>
+            <div class="grid-3">
+                <div>
+                    <label class="text-sm text-muted">Prioridade</label>
+                    <select class="select mt-1" @bind="_formPriority">
+                        <option value="0">Baixa</option>
+                        <option value="1">Média</option>
+                        <option value="2">Alta</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm text-muted">Tag</label>
+                    <input class="input mt-1" placeholder="ex: trabalho, estudo..." @bind="_formTag" />
+                </div>
+                <div>
+                    <label class="text-sm text-muted">Data limite</label>
+                    <input type="date" class="input mt-1" @bind="_formDueDate" />
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button class="btn btn-primary" @onclick="SaveTask">Salvar</button>
+                <button class="btn btn-ghost" @onclick="CloseForm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="flex gap-2 mb-4">
+    <button class="btn @(_filter == "all"     ? "btn-primary" : "btn-ghost")" @onclick='() => SetFilter("all")'>Todas</button>
+    <button class="btn @(_filter == "pending" ? "btn-primary" : "btn-ghost")" @onclick='() => SetFilter("pending")'>Pendentes</button>
+    <button class="btn @(_filter == "done"    ? "btn-primary" : "btn-ghost")" @onclick='() => SetFilter("done")'>Concluídas</button>
+</div>
+
+@if (_filtered.Count == 0)
+{
+    <div class="card text-center" style="padding: 48px;">
+        <p style="font-size:32px; margin-bottom:12px;"><i class="fa-solid fa-list-check"></i></p>
+        <p class="text-muted">Nenhuma tarefa aqui.</p>
+    </div>
+}
+else
+{
+    @foreach (var item in _filtered)
+    {
+        var it = item;
+        <div class="todo-item @(it.IsCompleted ? "done" : "")">
+            <div class="todo-check @(it.IsCompleted ? "checked" : "")"
+                 @onclick="() => ToggleTask(it.Id)" style="cursor:pointer;">
+                @if (it.IsCompleted) { <i class="fa-solid fa-check" style="color:#fff; font-size:10px;"></i> }
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div class="todo-title">@it.Title</div>
+                @if (!string.IsNullOrEmpty(it.Description))
+                {
+                    <div class="todo-meta truncate">@it.Description</div>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(it.Tag))
+            {
+                <span class="badge badge-purple">@it.Tag</span>
+            }
+            <span class="badge @GetPriorityBadge(it.Priority)">@GetPriorityLabel(it.Priority)</span>
+            @if (it.DueDate.HasValue)
+            {
+                <span class="text-sm text-muted"><i class="fa-solid fa-calendar-days"></i> @it.DueDate.Value.ToString("dd/MM")</span>
+            }
+            <button class="btn btn-icon btn-ghost" @onclick="() => EditTask(it)" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="btn btn-icon btn-danger" @onclick="() => DeleteTask(it.Id)" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    }
+}
+
+@code {
+    private List<TodoItem> _tasks    = new();
+    private List<TodoItem> _filtered = new();
+    private string _filter = "all";
+    private bool _showForm;
+    private TodoItem? _editItem;
+
+    private string  _formTitle       = "";
+    private string? _formDescription;
+    private string? _formTag;
+    private int     _formPriority    = 1;
+    private DateTime? _formDueDate;
+
+    private int _pending => _tasks.Count(t => !t.IsCompleted);
+    private int _done    => _tasks.Count(t =>  t.IsCompleted);
+
+    protected override async Task OnInitializedAsync()
+    {
+        TaskSvc.OnChanged += HandleChanged;
+        await LoadAsync();
+    }
+
+    private async void HandleChanged()
+    {
+        await LoadAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        _tasks = await TaskSvc.GetAllAsync();
+        ApplyFilter();
+    }
+
+    private void SetFilter(string f) { _filter = f; ApplyFilter(); }
+
+    private void ApplyFilter()
+    {
+        _filtered = _filter switch
+        {
+            "pending" => _tasks.Where(t => !t.IsCompleted).ToList(),
+            "done"    => _tasks.Where(t =>  t.IsCompleted).ToList(),
+            _         => _tasks.ToList()
+        };
+    }
+
+    private void OpenNewTask()
+    {
+        _editItem = new TodoItem();
+        _formTitle = ""; _formDescription = null; _formTag = null;
+        _formPriority = 1; _formDueDate = null;
+        _showForm = true;
+    }
+
+    private void EditTask(TodoItem item)
+    {
+        _editItem        = item;
+        _formTitle       = item.Title;
+        _formDescription = item.Description;
+        _formTag         = item.Tag;
+        _formPriority    = (int)item.Priority;
+        _formDueDate     = item.DueDate;
+        _showForm        = true;
+    }
+
+    private async Task SaveTask()
+    {
+        if (string.IsNullOrWhiteSpace(_formTitle)) return;
+        var item = _editItem ?? new TodoItem();
+        item.Title       = _formTitle.Trim();
+        item.Description = _formDescription;
+        item.Tag         = _formTag;
+        item.Priority    = (Priority)_formPriority;
+        item.DueDate     = _formDueDate;
+
+        if (item.Id == 0) await TaskSvc.AddAsync(item);
+        else              await TaskSvc.UpdateAsync(item);
+        CloseForm();
+    }
+
+    private void CloseForm() { _showForm = false; _editItem = null; }
+
+    private async Task ToggleTask(int id)
+    {
+        await TaskSvc.ToggleAsync(id);
+        ApplyFilter();
+    }
+
+    private async Task DeleteTask(int id) => await TaskSvc.DeleteAsync(id);
+
+    private string GetPriorityBadge(Priority p) => p switch
+    {
+        Priority.High   => "badge-coral",
+        Priority.Medium => "badge-amber",
+        _               => "badge-teal"
+    };
+
+    private string GetPriorityLabel(Priority p) => p switch
+    {
+        Priority.High   => "Alta",
+        Priority.Medium => "Média",
+        _               => "Baixa"
+    };
+
+    public void Dispose() => TaskSvc.OnChanged -= HandleChanged;
+}

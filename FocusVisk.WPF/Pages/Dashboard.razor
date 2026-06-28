@@ -1,0 +1,107 @@
+@inject StatsService Stats
+@inject TaskService TaskSvc
+
+<div class="page-header">
+    <h1 class="page-title">Bom dia! <i class="fa-solid fa-sun"></i></h1>
+    <p class="page-subtitle">@DateTime.Now.ToString("dddd, dd 'de' MMMM", new System.Globalization.CultureInfo("pt-BR"))</p>
+</div>
+
+@if (_stats != null)
+{
+    <div class="grid-4 mb-4">
+        <div class="stat-card">
+            <div class="stat-value" style="color: var(--accent-purple)">@_stats.TodaySessions</div>
+            <div class="stat-label">Sessões hoje</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: var(--accent-amber)"><i class="fa-solid fa-fire" style="color:var(--accent-amber)"></i> @_stats.Streak</div>
+            <div class="stat-label">Dias seguidos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: var(--accent-green)">@_stats.CompletedToday</div>
+            <div class="stat-label">Tarefas concluídas hoje</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: var(--accent-coral)">@_stats.PendingTasks</div>
+            <div class="stat-label">Tarefas pendentes</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-size:15px; font-weight:600;">Sessões esta semana</h2>
+                <span class="badge badge-purple">@_stats.WeekSessions total</span>
+            </div>
+            @{
+                var maxSessions = _stats.DailyStats.Max(d => d.Count);
+                if (maxSessions == 0) maxSessions = 1;
+            }
+            <div class="bar-chart">
+                @foreach (var day in _stats.DailyStats)
+                {
+                    <div class="bar-col">
+                        <div class="bar-fill"
+                             style="height: @(day.Count == 0 ? 4 : (int)(day.Count * 70.0 / maxSessions))px">
+                        </div>
+                        <div class="bar-label">@day.Day</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-size:15px; font-weight:600;">Tarefas pendentes</h2>
+            </div>
+            @if (_pendingTasks.Count == 0)
+            {
+                <p class="text-muted text-sm text-center" style="padding: 20px 0;">
+                    <i class="fa-solid fa-circle-check" style="color:var(--accent-green)"></i> Nenhuma tarefa pendente
+                </p>
+            }
+            else
+            {
+                @foreach (var task in _pendingTasks.Take(5))
+                {
+                    <div class="todo-item" style="margin-bottom:6px;">
+                        <div class="todo-check">
+                        </div>
+                        <span class="todo-title truncate">@task.Title</span>
+                        <span class="badge @GetPriorityBadge(task.Priority)">@GetPriorityLabel(task.Priority)</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center text-muted" style="padding: 40px;">Carregando...</div>
+}
+
+@code {
+    private DashboardStats? _stats;
+    private List<TodoItem> _pendingTasks = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stats = await Stats.GetStatsAsync();
+        var all = await TaskSvc.GetAllAsync();
+        _pendingTasks = all.Where(t => !t.IsCompleted).ToList();
+    }
+
+    private string GetPriorityBadge(Priority p) => p switch
+    {
+        Priority.High   => "badge-coral",
+        Priority.Medium => "badge-amber",
+        _               => "badge-teal"
+    };
+
+    private string GetPriorityLabel(Priority p) => p switch
+    {
+        Priority.High   => "Alta",
+        Priority.Medium => "Média",
+        _               => "Baixa"
+    };
+}

@@ -1,0 +1,127 @@
+@inject NotesService NotesSvc
+@implements IDisposable
+
+<div class="page-header flex justify-between items-center">
+    <div>
+        <h1 class="page-title">Notas rápidas</h1>
+        <p class="page-subtitle">@_notes.Count nota(s)</p>
+    </div>
+    <button class="btn btn-primary" @onclick="NewNote"><i class="fa-solid fa-plus"></i> Nova nota</button>
+</div>
+
+@if (_editing != null)
+{
+    <div class="card mb-4">
+        <input class="input mb-3" placeholder="Título..." @bind="_editing.Title"
+               style="font-size:16px; font-weight:600;"/>
+        <textarea class="textarea" placeholder="Escreva aqui..."
+                  @bind="_editing.Content" style="min-height:180px;"></textarea>
+        <div class="flex gap-2 mt-3">
+            <button class="btn btn-primary" @onclick="SaveNote">Salvar</button>
+            <button class="btn btn-ghost"   @onclick="() => _editing = null">Cancelar</button>
+            @if (_editing.Id > 0)
+            {
+                <button class="btn btn-danger" @onclick="DeleteEditing">Excluir</button>
+            }
+        </div>
+    </div>
+}
+
+@if (_notes.Count == 0 && _editing == null)
+{
+    <div class="card text-center" style="padding: 64px;">
+        <p style="font-size: 40px; margin-bottom: 12px;"><i class="fa-regular fa-note-sticky icon-xl"></i></p>
+        <p class="text-muted">Nenhuma nota ainda. Crie uma!</p>
+    </div>
+}
+else
+{
+    @if (_notes.Any(n => n.IsPinned))
+    {
+        <p class="text-sm text-muted mb-2"><i class="fa-solid fa-thumbtack"></i> Fixadas</p>
+        <div class="grid-3 mb-4">
+            @foreach (var note in _notes.Where(n => n.IsPinned))
+            {
+                var n = note;
+                <div class="note-card pinned" @onclick="() => EditNote(n)">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="note-card-title truncate">@n.Title</span>
+                        <button class="btn btn-icon btn-ghost" style="font-size:12px;"
+                                @onclick:stopPropagation="true"
+                                @onclick="() => TogglePin(n.Id)"><i class="fa-solid fa-thumbtack"></i></button>
+                    </div>
+                    <p class="note-card-preview">@n.Content</p>
+                    <p class="text-sm text-muted mt-2">@n.UpdatedAt.ToString("dd/MM HH:mm")</p>
+                </div>
+            }
+        </div>
+    }
+
+    @if (_notes.Any(n => !n.IsPinned))
+    {
+        <p class="text-sm text-muted mb-2">Todas as notas</p>
+        <div class="grid-3">
+            @foreach (var note in _notes.Where(n => !n.IsPinned))
+            {
+                var n = note;
+                <div class="note-card" @onclick="() => EditNote(n)">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="note-card-title truncate">@n.Title</span>
+                        <button class="btn btn-icon btn-ghost" style="font-size:12px;"
+                                @onclick:stopPropagation="true"
+                                @onclick="() => TogglePin(n.Id)"><i class="fa-solid fa-thumbtack"></i></button>
+                    </div>
+                    <p class="note-card-preview">@n.Content</p>
+                    <p class="text-sm text-muted mt-2">@n.UpdatedAt.ToString("dd/MM HH:mm")</p>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<QuickNote> _notes   = new();
+    private QuickNote?      _editing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NotesSvc.OnChanged += HandleChanged;
+        await LoadAsync();
+    }
+
+    private async void HandleChanged()
+    {
+        await LoadAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync() => _notes = await NotesSvc.GetAllAsync();
+
+    private void NewNote() => _editing = new QuickNote { Title = "Nova nota" };
+
+    private void EditNote(QuickNote note) => _editing = new QuickNote
+    {
+        Id       = note.Id,
+        Title    = note.Title,
+        Content  = note.Content,
+        IsPinned = note.IsPinned
+    };
+
+    private async Task SaveNote()
+    {
+        if (_editing == null) return;
+        await NotesSvc.SaveAsync(_editing);
+        _editing = null;
+    }
+
+    private async Task DeleteEditing()
+    {
+        if (_editing == null) return;
+        await NotesSvc.DeleteAsync(_editing.Id);
+        _editing = null;
+    }
+
+    private async Task TogglePin(int id) => await NotesSvc.TogglePinAsync(id);
+
+    public void Dispose() => NotesSvc.OnChanged -= HandleChanged;
+}
