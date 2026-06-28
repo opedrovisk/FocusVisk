@@ -5,8 +5,6 @@ Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor
 > 🖥️ **Branch atual: `Desktop`** — versão nativa para Windows.
 > Uma branch `Web` está planejada e compartilhará as camadas `Core` e `Application` desta mesma solução.
 
-![Preview do FocusVisk](./screenshot.png)
-
 ---
 
 ## Sumário
@@ -15,7 +13,6 @@ Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor
 - [Branches do Projeto](#branches-do-projeto)
 - [Tecnologias](#tecnologias)
 - [Estrutura do Projeto](#estrutura-do-projeto)
-- [Modelos de Dados](#modelos-de-dados)
 - [Serviços](#serviços)
 - [Funcionalidades](#funcionalidades)
 - [Pré-requisitos](#pré-requisitos)
@@ -132,40 +129,40 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 ---
 
 ## Funcionalidades
-
 **Dashboard**
 - Cards com sessões do dia, streak de dias seguidos, tarefas concluídas hoje e tarefas pendentes
 - Gráfico de barras das sessões Pomodoro dos últimos 7 dias
 - Listagem rápida de tarefas pendentes
-
+  <img width="1082" height="678" alt="image" src="https://github.com/user-attachments/assets/ca7d9497-c72f-4e06-ad3c-08058a774828" />
 **Tarefas**
 - Cadastro com título, descrição, prioridade (`Low / Medium / High`), tag e prazo
 - Filtros por status (todas, pendentes, concluídas) e prioridade
 - Toggle de conclusão e exclusão
-
+<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/9aaeb4a1-9458-4de8-9365-caebef4f6aef" />
 **Pomodoro**
 - Timer configurável com fases de foco, pausa curta e pausa longa
 - Skip e reset de fase
 - Persistência automática de sessões concluídas
 - Integração com `FocusBlockerService` para bloquear sites durante o foco
-
+<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/103a0fa9-60ca-479a-a7c1-4157614ec792" />
 **Calendário**
 - Navegação mensal
 - Anotações por dia com cor customizável
-
+<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/704a24ee-e0fe-443f-920e-bc2bfb18b33d" />
 **Notas Rápidas**
 - Criação e edição inline
 - Fixação de notas ao topo
-
+<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/84619ed1-f95d-4eb3-b912-3a00ad0770f0" />
 **Configurações**
 - Duração das fases do Pomodoro
 - Ativar/desativar bloqueio de sites e editar lista de sites bloqueados
 - Alternância entre tema claro e escuro
 - Customização de cor de destaque e cores de fundo
-
+<img width="1086" height="676" alt="image" src="https://github.com/user-attachments/assets/ae68d839-7d9b-419a-8bc3-14ae43167926" />
 **System Tray**
 - Aplicação minimiza para a bandeja do sistema
 - Menu de contexto com opções de restauração e encerramento
+<img width="234" height="174" alt="image" src="https://github.com/user-attachments/assets/1af85998-f49c-43ff-ae89-073463b5caa3" />
 
 ---
 
