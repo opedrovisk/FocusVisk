@@ -2,7 +2,7 @@
 @inject TaskService TaskSvc
 
 <div class="page-header">
-    <h1 class="page-title">Bom dia! <i class="fa-solid fa-sun"></i></h1>
+    <h1 class="page-title">@GetGreeting(), @_userName! <i class="fa-solid"></i></h1>
     <p class="page-subtitle">@DateTime.Now.ToString("dddd, dd 'de' MMMM", new System.Globalization.CultureInfo("pt-BR"))</p>
 </div>
 
@@ -83,6 +83,15 @@ else
 @code {
     private DashboardStats? _stats;
     private List<TodoItem> _pendingTasks = new();
+
+    private string _userName = char.ToUpper(Environment.UserName[0]) + Environment.UserName[1..];
+
+    private string GetGreeting() => DateTime.Now.Hour switch
+    {
+        >= 5 and < 12 => "Bom dia",
+        >= 12 and < 18 => "Boa tarde",
+        _ => "Boa noite"
+    };
 
     protected override async Task OnInitializedAsync()
     {
