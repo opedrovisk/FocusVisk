@@ -1,4 +1,8 @@
-﻿using System.IO;
+﻿using FocusVisk.Data;
+using FocusVisk.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System.IO;
 
 public class FocusBlockerService
 {
@@ -6,7 +10,26 @@ public class FocusBlockerService
     private const string BlockMarkerStart = "# === FOCUS FocusVisk START ===";
     private const string BlockMarkerEnd = "# === FOCUS FocusVisk END ===";
 
+    private readonly IServiceProvider _sp;
     public bool IsBlocking { get; private set; }
+
+    public FocusBlockerService(IServiceProvider sp) => _sp = sp;
+    public async Task<string> GetBlockedSitesAsync()
+    {
+        using var scope = _sp.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var settings = await db.Settings.FirstOrDefaultAsync(s => s.Id == 1);
+        return settings?.BlockedSites ?? string.Empty;
+    }
+    public async Task SaveBlockedSitesAsync(string sites)
+    {
+        using var scope = _sp.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var settings = await db.Settings.FirstOrDefaultAsync(s => s.Id == 1);
+        if (settings is null) return;
+        settings.BlockedSites = sites;
+        await db.SaveChangesAsync();
+    }
 
     public async Task BlockAsync(IEnumerable<string> sites)
     {

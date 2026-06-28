@@ -63,12 +63,24 @@
             </div>
         }
 
-        <div class="flex gap-2 mt-3">
-            <button class="btn btn-primary" @onclick="ApplyBlock"
-                    disabled="@Blocker.IsBlocking">Ativar bloqueio</button>
-            <button class="btn btn-ghost"   @onclick="RemoveBlock"
-                    disabled="@(!Blocker.IsBlocking)">Desativar</button>
+        <div class="flex justify-between items-center mt-3">
+            <div class="flex gap-2">
+                <button class="btn btn-primary" @onclick="ApplyBlock"
+                        disabled="@Blocker.IsBlocking">Ativar bloqueio</button>
+                <button class="btn btn-ghost" @onclick="RemoveBlock"
+                        disabled="@(!Blocker.IsBlocking)">Desativar</button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="btn btn-ghost" @onclick="SaveSitesList">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar lista
+                </button>
+                @if (_sitesSaved)
+                {
+                    <span class="badge badge-green">✓ Salvo!</span>
+                }
+            </div>
         </div>
+
         <p class="text-sm text-muted mt-2">
             <i class="fa-solid fa-triangle-exclamation"></i> Requer execução como Administrador para modificar o arquivo hosts.
         </p>
@@ -151,25 +163,26 @@
     <div class="card">
         <h2 style="font-size:15px; font-weight:600; margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> Sobre o FocusVisk</h2>
         <p class="text-sm text-muted">Versão 1.0.0</p>
-        <p class="text-sm text-muted">.NET 8 · Blazor Hybrid · WPF · SQLite</p>
+        <p class="text-sm text-muted">.NET 8 · Blazor Hybrid · WPF · SQL Server</p>
         <p class="text-sm text-muted mt-2">
-            Banco de dados em:
+            Banco de dados:
             <span class="font-mono" style="font-size:11px; color: var(--text-secondary);">
-                %AppData%\FocusVisk\focus.db
+                FocusViskDb (SQL Server LocalDB)
             </span>
         </p>
     </div>
 </div>
 
 @code {
-    private int  _focusMin          = 25;
-    private int  _shortMin          = 5;
-    private int  _longMin           = 15;
+    private int  _focusMin = 25;
+    private int  _shortMin = 5;
+    private int  _longMin = 15;
     private int  _sessionsBeforeLong = 4;
     private bool _pomodoroSaved;
 
-    private string  _blockedSites = "youtube.com\nx.com\ninstagram.com\nreddit.com";
+    private string  _blockedSites = string.Empty;
     private string? _blockerError;
+    private bool    _sitesSaved;
 
     private bool   _showCustomColors;
     private string _accentColor  = "#7C6AF7";
@@ -177,17 +190,19 @@
     private string _mainBgColor  = "#0F0F14";
     private bool   _themeSaved;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _focusMin           = Pomodoro.FocusDurationMinutes;
         _shortMin           = Pomodoro.ShortBreakMinutes;
         _longMin            = Pomodoro.LongBreakMinutes;
         _sessionsBeforeLong = Pomodoro.SessionsBeforeLongBreak;
 
-        _accentColor  = ThemeSvc.AccentColor;
+        _accentColor = ThemeSvc.AccentColor;
         _sidebarColor = ThemeSvc.SidebarBgColor;
-        _mainBgColor  = ThemeSvc.MainBgColor;
+        _mainBgColor = ThemeSvc.MainBgColor;
         _showCustomColors = ThemeSvc.Theme == "custom";
+
+        _blockedSites = await Blocker.GetBlockedSitesAsync();
     }
 
     private async Task SavePomodoro()
@@ -197,6 +212,16 @@
         StateHasChanged();
         await Task.Delay(2000);
         _pomodoroSaved = false;
+        StateHasChanged();
+    }
+
+    private async Task SaveSitesList()
+    {
+        await Blocker.SaveBlockedSitesAsync(_blockedSites);
+        _sitesSaved = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _sitesSaved = false;
         StateHasChanged();
     }
 
