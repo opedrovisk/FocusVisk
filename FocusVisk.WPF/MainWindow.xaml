@@ -12,30 +12,30 @@
         StateChanged="Window_StateChanged"
         Closing="Window_Closing">
 
-  <Window.Resources>
-    <ContextMenu x:Key="TrayMenu">
-      <MenuItem Header="Abrir Focus" Click="TrayOpen_Click" FontWeight="Bold"/>
-      <Separator/>
-      <MenuItem Header="Iniciar Pomodoro" Click="TrayPomodoro_Click"/>
-      <MenuItem Header="Nova tarefa rápida" Click="TrayNewTask_Click"/>
-      <Separator/>
-      <MenuItem Header="Sair" Click="TrayExit_Click"/>
-    </ContextMenu>
-  </Window.Resources>
+    <Window.Resources>
+        <ContextMenu x:Key="TrayMenu">
+            <MenuItem Header="Abrir Focus" Click="TrayOpen_Click" FontWeight="Bold"/>
+            <Separator/>
+            <MenuItem Header="Iniciar Pomodoro" Click="TrayPomodoro_Click"/>
+            <MenuItem Header="Nova tarefa rápida" Click="TrayNewTask_Click"/>
+            <Separator/>
+            <MenuItem Header="Sair" Click="TrayExit_Click"/>
+        </ContextMenu>
+    </Window.Resources>
 
-  <Grid>
-    <tb:TaskbarIcon x:Name="TrayIcon"
+    <Grid>
+        <tb:TaskbarIcon x:Name="TrayIcon"
                     IconSource="pack://application:,,,/Resources/icon.ico"
                     ToolTipText="FocusVisk"
                     ContextMenu="{StaticResource TrayMenu}"
                     TrayMouseDoubleClick="TrayIcon_DoubleClick"/>
 
-    <blazor:BlazorWebView x:Name="BlazorView"
+        <blazor:BlazorWebView x:Name="BlazorView"
                           HostPage="wwwroot/index.html"
                           Services="{DynamicResource services}">
-      <blazor:BlazorWebView.RootComponents>
-        <blazor:RootComponent Selector="#app" ComponentType="{x:Type local:AppComponent}"/>
-      </blazor:BlazorWebView.RootComponents>
-    </blazor:BlazorWebView>
-  </Grid>
+            <blazor:BlazorWebView.RootComponents>
+                <blazor:RootComponent Selector="#app" ComponentType="{x:Type local:AppComponent}"/>
+            </blazor:BlazorWebView.RootComponents>
+        </blazor:BlazorWebView>
+    </Grid>
 </Window>
