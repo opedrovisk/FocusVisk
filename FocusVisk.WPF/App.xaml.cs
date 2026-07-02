@@ -40,6 +40,7 @@ public partial class App : Application
         services.AddSingleton<FocusBlockerService>();
         services.AddSingleton<StatsService>();
         services.AddSingleton<ThemeService>();
+        services.AddSingleton<FinancasService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG

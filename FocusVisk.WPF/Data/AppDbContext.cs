@@ -13,10 +13,20 @@ public class AppDbContext : DbContext
     public DbSet<PomodoroSession> PomodoroSessions => Set<PomodoroSession>();
     public DbSet<QuickNote> QuickNotes => Set<QuickNote>();
     public DbSet<AppSettings> Settings => Set<AppSettings>();
+    public DbSet<FinancaTransaction> Transactions => Set<FinancaTransaction>();
+    public DbSet<SavingGoal> SavingGoals => Set<SavingGoal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AppSettings>().HasData(new AppSettings { Id = 1 });
+
+        modelBuilder.Entity<FinancaTransaction>()
+            .Property(t => t.Amount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<SavingGoal>()
+            .Property(g => g.TargetAmount)
+            .HasPrecision(18, 2);
     }
 }
 

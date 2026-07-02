@@ -1,6 +1,5 @@
 ﻿<nav class="sidebar">
     <div class="sidebar-logo">
-        <div class="logo-icon"><i class="fa-solid fa-bullseye" style="color:#fff;"></i></div>
         <div class="logo-text">Focus<span>Visk</span></div>
     </div>
 
@@ -29,6 +28,11 @@
     <button class="nav-item @(CurrentPage == "notes" ? "active" : "")"
             @onclick='() => OnNavigate.InvokeAsync("notes")'>
         <span class="nav-icon"><i class="fa-solid fa-note-sticky"></i></span> Notas
+    </button>
+
+    <button class="nav-item @(CurrentPage == "financas" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("financas")'>
+        <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span> Finanças
     </button>
 
     <div class="sidebar-bottom">

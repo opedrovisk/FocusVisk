@@ -1,6 +1,6 @@
-@inject PomodoroService     Pomodoro
+@inject PomodoroService Pomodoro
 @inject FocusBlockerService Blocker
-@inject ThemeService        ThemeSvc
+@inject ThemeService ThemeSvc
 
 <div class="page-header">
     <h1 class="page-title">Configurações</h1>
@@ -13,19 +13,19 @@
         <div class="grid-2">
             <div>
                 <label class="text-sm text-muted">Foco (minutos)</label>
-                <input type="number" class="input mt-1" min="1" max="120" @bind="_focusMin"/>
+                <input type="number" class="input mt-1" min="1" max="120" @bind="_focusMin" />
             </div>
             <div>
                 <label class="text-sm text-muted">Pausa curta (minutos)</label>
-                <input type="number" class="input mt-1" min="1" max="60" @bind="_shortMin"/>
+                <input type="number" class="input mt-1" min="1" max="60" @bind="_shortMin" />
             </div>
             <div>
                 <label class="text-sm text-muted">Pausa longa (minutos)</label>
-                <input type="number" class="input mt-1" min="1" max="60" @bind="_longMin"/>
+                <input type="number" class="input mt-1" min="1" max="60" @bind="_longMin" />
             </div>
             <div>
                 <label class="text-sm text-muted">Sessões antes da pausa longa</label>
-                <input type="number" class="input mt-1" min="2" max="8" @bind="_sessionsBeforeLong"/>
+                <input type="number" class="input mt-1" min="2" max="8" @bind="_sessionsBeforeLong" />
             </div>
         </div>
         <div class="flex items-center gap-3 mt-4">
@@ -45,8 +45,8 @@
             </div>
             <span class="badge @(Blocker.IsBlocking ? "badge-coral" : "badge-teal")">
                 @(Blocker.IsBlocking
-                    ? (MarkupString)"<i class='fa-solid fa-lock'></i> Ativo"
-                    : (MarkupString)"<i class='fa-solid fa-lock-open'></i> Inativo")
+                    ? (MarkupString)"<i class='fa-solid fa-lock'></i>&nbsp; Ativo"
+                    : (MarkupString)"<i class='fa-solid fa-lock-open'></i>&nbsp; Inativo")
             </span>
         </div>
 
@@ -57,8 +57,8 @@
         @if (!string.IsNullOrEmpty(_blockerError))
         {
             <div style="margin-top:8px; padding:10px 14px; background: rgba(240,112,112,0.1);
-                        border: 1px solid rgba(240,112,112,0.3); border-radius: var(--radius-md);
-                        color: var(--accent-coral); font-size:13px;">
+                border: 1px solid rgba(240,112,112,0.3); border-radius: var(--radius-md);
+                color: var(--accent-coral); font-size:13px;">
                 <i class="fa-solid fa-triangle-exclamation"></i> @_blockerError
             </div>
         }
@@ -66,9 +66,13 @@
         <div class="flex justify-between items-center mt-3">
             <div class="flex gap-2">
                 <button class="btn btn-primary" @onclick="ApplyBlock"
-                        disabled="@Blocker.IsBlocking">Ativar bloqueio</button>
+                        disabled="@Blocker.IsBlocking">
+                    Ativar bloqueio
+                </button>
                 <button class="btn btn-ghost" @onclick="RemoveBlock"
-                        disabled="@(!Blocker.IsBlocking)">Desativar</button>
+                        disabled="@(!Blocker.IsBlocking)">
+                    Desativar
+                </button>
             </div>
             <div class="flex items-center gap-2">
                 <button class="btn btn-ghost" @onclick="SaveSitesList">
@@ -93,11 +97,11 @@
 
         <label class="text-sm text-muted">Tema</label>
         <div class="flex gap-2 mt-1 mb-4">
-            <button class="btn @(ThemeSvc.Theme == "dark"   ? "btn-primary" : "btn-ghost")"
+            <button class="btn @(ThemeSvc.Theme == "dark" ? "btn-primary" : "btn-ghost")"
                     @onclick='() => SetPreset("dark")'>
                 <i class="fa-solid fa-moon"></i> Escuro
             </button>
-            <button class="btn @(ThemeSvc.Theme == "light"  ? "btn-primary" : "btn-ghost")"
+            <button class="btn @(ThemeSvc.Theme == "light" ? "btn-primary" : "btn-ghost")"
                     @onclick='() => SetPreset("light")'>
                 <i class="fa-solid fa-sun"></i> Claro
             </button>
@@ -116,7 +120,7 @@
                         <input type="color" value="@_accentColor"
                                @oninput="e => _accentColor = e.Value?.ToString() ?? _accentColor"
                                style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
-                                      cursor:pointer; background:none; padding:0;" />
+                        cursor:pointer; background:none; padding:0;" />
                         <input class="input" @bind="_accentColor"
                                placeholder="#7C6AF7" style="flex:1;" />
                     </div>
@@ -129,7 +133,7 @@
                         <input type="color" value="@_sidebarColor"
                                @oninput="e => _sidebarColor = e.Value?.ToString() ?? _sidebarColor"
                                style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
-                                      cursor:pointer; background:none; padding:0;" />
+                        cursor:pointer; background:none; padding:0;" />
                         <input class="input" @bind="_sidebarColor"
                                placeholder="#16161E" style="flex:1;" />
                     </div>
@@ -141,7 +145,7 @@
                         <input type="color" value="@_mainBgColor"
                                @oninput="e => _mainBgColor = e.Value?.ToString() ?? _mainBgColor"
                                style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
-                                      cursor:pointer; background:none; padding:0;" />
+                        cursor:pointer; background:none; padding:0;" />
                         <input class="input" @bind="_mainBgColor"
                                placeholder="#0F0F14" style="flex:1;" />
                     </div>
@@ -174,27 +178,27 @@
 </div>
 
 @code {
-    private int  _focusMin = 25;
-    private int  _shortMin = 5;
-    private int  _longMin = 15;
-    private int  _sessionsBeforeLong = 4;
+    private int _focusMin = 25;
+    private int _shortMin = 5;
+    private int _longMin = 15;
+    private int _sessionsBeforeLong = 4;
     private bool _pomodoroSaved;
 
-    private string  _blockedSites = string.Empty;
+    private string _blockedSites = string.Empty;
     private string? _blockerError;
-    private bool    _sitesSaved;
+    private bool _sitesSaved;
 
-    private bool   _showCustomColors;
-    private string _accentColor  = "#7C6AF7";
+    private bool _showCustomColors;
+    private string _accentColor = "#7C6AF7";
     private string _sidebarColor = "#16161E";
-    private string _mainBgColor  = "#0F0F14";
-    private bool   _themeSaved;
+    private string _mainBgColor = "#0F0F14";
+    private bool _themeSaved;
 
     protected override async Task OnInitializedAsync()
     {
-        _focusMin           = Pomodoro.FocusDurationMinutes;
-        _shortMin           = Pomodoro.ShortBreakMinutes;
-        _longMin            = Pomodoro.LongBreakMinutes;
+        _focusMin = Pomodoro.FocusDurationMinutes;
+        _shortMin = Pomodoro.ShortBreakMinutes;
+        _longMin = Pomodoro.LongBreakMinutes;
         _sessionsBeforeLong = Pomodoro.SessionsBeforeLongBreak;
 
         _accentColor = ThemeSvc.AccentColor;
