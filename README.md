@@ -1,6 +1,6 @@
 # FocusVisk — Desktop
 
-Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 8)**, com foco em gestão de tarefas, Pomodoro, calendário, notas rápidas e bloqueio de sites distratores durante sessões de foco.
+Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 8)**, com foco em gestão de tarefas, Pomodoro, calendário, notas rápidas, controle financeiro e bloqueio de sites distratores durante sessões de foco.
 
 > 🖥️ **Branch atual: `Desktop`** — versão nativa para Windows.
 > Uma branch `Web` está planejada e compartilhará as camadas `Core` e `Application` desta mesma solução.
@@ -22,7 +22,7 @@ Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor
 
 ## Apresentação
 
-O **FocusVisk** é uma ferramenta de produtividade pessoal para Windows que centraliza tudo o que o usuário precisa para manter o foco: um timer Pomodoro com bloqueio automático de sites, gerenciamento de tarefas com prioridades, calendário com anotações, notas rápidas fixáveis e um dashboard com estatísticas de desempenho da semana.
+O **FocusVisk** é uma ferramenta de produtividade pessoal para Windows que centraliza tudo o que o usuário precisa para manter o foco: um timer Pomodoro com bloqueio automático de sites, gerenciamento de tarefas com prioridades, calendário com anotações, notas rápidas fixáveis, controle financeiro com metas de economia e um dashboard com estatísticas de desempenho da semana.
 
 A interface é construída em **Blazor Hybrid** renderizada dentro de um `WebView2` no WPF, o que permite um front-end web moderno (HTML/CSS) rodando como aplicação nativa sem depender de navegador externo.
 
@@ -50,6 +50,7 @@ As camadas `Core` e `Application` serão compartilhadas entre as duas versões, 
 | System Tray | H.NotifyIcon.Wpf |
 | MVVM | CommunityToolkit.Mvvm |
 | Ícones | Font Awesome 6 (local, offline) |
+| Gráficos | Chart.js (linha e rosca na aba Finanças) |
 | Arquitetura | Layered (Core · Application · Infrastructure · WPF) |
 
 ---
@@ -69,10 +70,10 @@ FocusVisk/
 │   └── wwwroot/
 └── FocusVisk.WPF/                # Projeto principal — aplicação desktop
     ├── Data/
-    │   ├── AppDbContext.cs        # DbContext (EF Core); seed de AppSettings
-    │   └── AppDbContextFactory.cs # Factory para design-time (migrations)
+    │   └── AppDbContext.cs        # DbContext (EF Core) + factory de design-time; seed de AppSettings
     ├── Models/
     │   ├── AppModels.cs           # CalendarNote, PomodoroSession, QuickNote, AppSettings
+    │   ├── FinanceTransaction.cs  # FinancaTransaction, SavingGoal e enums de tipo/categoria
     │   └── TodoItem.cs            # Tarefa com Priority enum
     ├── Pages/
     │   ├── Dashboard.razor        # Estatísticas, gráfico semanal, tarefas pendentes
@@ -80,12 +81,14 @@ FocusVisk/
     │   ├── PomodoroPage.razor     # Timer Pomodoro com controle de fase
     │   ├── CalendarPage.razor     # Calendário mensal com anotações por dia
     │   ├── NotesPage.razor        # Notas rápidas fixáveis
+    │   ├── FinancasPage.razor     # Transações, metas de economia, gráficos e calculadora
     │   └── SettingsPage.razor     # Configurações de Pomodoro, tema e bloqueio
     ├── Services/
     │   ├── TaskService.cs         # CRUD de tarefas
     │   ├── PomodoroService.cs     # Timer com fases e persistência de sessões
     │   ├── CalendarService.cs     # CRUD de anotações de calendário
     │   ├── NotesService.cs        # CRUD de notas rápidas
+    │   ├── FinancasService.cs     # CRUD de transações e metas de economia
     │   ├── FocusBlockerService.cs # Bloqueio de sites via arquivo hosts do Windows
     │   ├── StatsService.cs        # Estatísticas e streak do dashboard
     │   └── ThemeService.cs        # Persistência e aplicação de tema/cores
@@ -93,7 +96,7 @@ FocusVisk/
     │   └── Sidebar.razor          # Navegação lateral
     ├── wwwroot/
     │   ├── css/app.css            # Estilos globais e variáveis CSS
-    │   ├── js/app.js              # Interoperabilidade JS
+    │   ├── js/app.js              # Interoperabilidade JS e gráficos (Chart.js) da aba Finanças
     │   ├── index.html             # Host da aplicação Blazor
     │   └── lib/fontawesome/       # Font Awesome 6 (offline)
     ├── App.xaml / App.xaml.cs     # Bootstrap, DI e configuração do DbContext
@@ -115,6 +118,9 @@ CRUD de `CalendarNote` com queries por mês e por dia. Expõe `OnChanged` para r
 
 ### `NotesService`
 CRUD de `QuickNote` com suporte a fixação (`IsPinned`). Ordenação: fixadas primeiro, depois por `UpdatedAt` decrescente.
+
+### `FinancasService`
+CRUD completo de transações (`FinancaTransaction`) e metas de economia (`SavingGoal`), com consultas por mês e cálculo do saldo total e do saldo do período. Uma meta salva para um mês que já possui meta cadastrada atualiza o registro existente em vez de duplicá-lo. Expõe `OnChanged` para reatividade da UI, seguindo o mesmo padrão de scope por operação dos demais serviços.
 
 ### `FocusBlockerService`
 Bloqueia e desbloqueia sites distratores manipulando o arquivo `C:\Windows\System32\drivers\etc\hosts`. Insere um bloco demarcado com comentários (`# === FOCUS FocusVisk START/END ===`) para isolamento seguro. Requer execução como **Administrador** para escrever no arquivo.
@@ -157,6 +163,15 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Fixação de notas ao topo
 <img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/510b1a05-93ca-49f7-9863-8f7f7fca45a5" />
 
+**Finanças**
+- Lançamento de entradas e saídas com título, valor, categoria e descrição opcional
+- Cards de saldo total, entradas do mês, saídas do mês e saldo líquido do mês
+- Meta de economia mensal com barra de progresso e aviso ao atingir o valor definido
+- Gráficos de evolução do saldo (últimos 7 dias) e de gastos por categoria no mês
+- Histórico de transações com filtros (tudo, entradas, saídas, mês atual) e exclusão
+- Calculadora rápida embutida (botão flutuante) para conferência de valores
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/974871c8-af9c-411f-a2e4-490628dbd501" />
+
 **Configurações**
 - Duração das fases do Pomodoro
 - Ativar/desativar bloqueio de sites e editar lista de sites bloqueados
@@ -184,6 +199,7 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 
 - **Bloqueio de sites:** o `FocusBlockerService` manipula o arquivo `hosts` do Windows e requer que o aplicativo seja executado como **Administrador**. Sem permissão elevada, o bloqueio é ignorado com uma exceção tratada.
 - **Banco de dados:** o schema é criado/migrado automaticamente na inicialização via `db.Database.Migrate()`. Migrations novas são aplicadas sem perda de dados existentes.
+- **Finanças:** valores monetários são armazenados como `decimal(18,2)` e exibidos no formato brasileiro (R$, cultura `pt-BR`). A meta de economia é única por mês/ano — salvar uma nova meta em um mês que já possui uma existente atualiza o valor em vez de criar um novo registro.
 - **WebView2:** o `Microsoft.AspNetCore.Components.WebView.Wpf` inclui o runtime do WebView2 automaticamente via NuGet; não é necessário instalar separadamente.
 - **Font Awesome:** os ícones são carregados localmente a partir de `wwwroot/lib/fontawesome`, sem dependência de CDN externo.
-- **EM DESENVOLVIMENTO, O PROJETO FOI IDEALIZADO PARA AUXILIAR NO MEU APRENDIZADO, AINDA RECEBERÁ NOVAS IMPLEMENTAÇÕES FUTURAMENTE.
+- **EM DESENVOLVIMENTO, O PROJETO FOI IDEALIZADO PARA AUXILIAR NO MEU APRENDIZADO, AINDA RECEBERÁ NOVAS IMPLEMENTAÇÕES FUTURAMENTE.**
