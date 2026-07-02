@@ -170,7 +170,7 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Gráficos de evolução do saldo (últimos 7 dias) e de gastos por categoria no mês
 - Histórico de transações com filtros (tudo, entradas, saídas, mês atual) e exclusão
 - Calculadora rápida embutida (botão flutuante) para conferência de valores
-<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/974871c8-af9c-411f-a2e4-490628dbd501" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/228526fe-f65d-4b5a-92d5-e26a6558187a" />
 
 **Configurações**
 - Duração das fases do Pomodoro
