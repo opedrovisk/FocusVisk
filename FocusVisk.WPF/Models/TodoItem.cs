@@ -11,6 +11,14 @@ public class TodoItem
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? CompletedAt { get; set; }
     public DateTime? DueDate { get; set; }
+    public TimeSpan? ScheduledTime { get; set; }
+    public bool IsRecurring { get; set; }
+    public RecurrenceType? RecurrenceType { get; set; }
+    public DateTime? LastAlertFiredAt { get; set; }
+    public bool ShowInCalendar { get; set; }
+    public int? ParentId { get; set; }
+    public TodoItem? Parent { get; set; }
+    public List<TodoItem> SubTasks { get; set; } = new();
 }
 
 public enum Priority
@@ -18,4 +26,12 @@ public enum Priority
     Low,
     Medium,
     High
+}
+
+public enum RecurrenceType
+{
+    Daily,
+    Weekdays,
+    Weekly,
+    Monthly
 }

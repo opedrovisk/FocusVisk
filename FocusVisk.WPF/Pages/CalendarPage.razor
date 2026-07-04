@@ -1,4 +1,5 @@
 @inject CalendarService CalSvc
+@inject TaskService TaskSvc
 @implements IDisposable
 
 <div class="page-header flex justify-between items-center">
@@ -17,7 +18,7 @@
 
     <div class="card">
         <div class="calendar-grid" style="margin-bottom:8px;">
-            @foreach (var h in new[] {"Dom","Seg","Ter","Qua","Qui","Sex","Sáb"})
+            @foreach (var h in new[] { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" })
             {
                 <div class="calendar-day-header">@h</div>
             }
@@ -26,15 +27,15 @@
             @foreach (var day in _calendarDays)
             {
                 var d = day;
-                var isToday    = d.Date == DateTime.Today;
+                var isToday = d.Date == DateTime.Today;
                 var isSelected = d.Date == _selected.Date;
-                var isOther    = d.Month != _currentDate.Month;
-                var hasNotes   = _noteDates.Contains(d.Date);
+                var isOther = d.Month != _currentDate.Month;
+                var hasEvents = _activeDates.Contains(d.Date);
 
                 <div class="calendar-day @(isToday ? "today" : "") @(isSelected ? "selected" : "") @(isOther ? "other-month" : "")"
                      @onclick="() => SelectDay(d)">
                     @d.Day
-                    @if (hasNotes && !isSelected)
+                    @if (hasEvents && !isSelected)
                     {
                         <div class="calendar-dot"></div>
                     }
@@ -50,7 +51,9 @@
                     @_selected.ToString("dd 'de' MMMM", new System.Globalization.CultureInfo("pt-BR"))
                 </h3>
                 <button class="btn btn-primary" style="font-size:12px; padding:6px 12px;"
-                        @onclick="NewNote"><i class="fa-solid fa-plus"></i> Nota</button>
+                        @onclick="NewNote">
+                    <i class="fa-solid fa-plus"></i> Nota
+                </button>
             </div>
 
             @if (_showNoteForm)
@@ -65,11 +68,45 @@
                 </div>
             }
 
-            @if (_dayNotes.Count == 0 && !_showNoteForm)
+            @if (_dayTasks.Count > 0)
+            {
+                <p class="text-sm text-muted" style="margin-bottom:8px; font-weight:500;">
+                    <i class="fa-solid fa-list-check" style="color:var(--accent-purple); margin-right:5px;"></i>
+                    Tarefas
+                </p>
+                @foreach (var task in _dayTasks)
+                {
+                    var t = task;
+                    <div style="display:flex; align-items:center; gap:8px; padding:8px 10px;
+                        background:var(--bg-elevated); border-radius:var(--radius-sm);
+                        margin-bottom:6px; opacity:@(t.IsCompleted ? "0.55" : "1");">
+                        <div class="todo-check @(t.IsCompleted ? "checked" : "")"
+                             style="flex-shrink:0; cursor:pointer;"
+                             @onclick="() => ToggleTask(t.Id)">
+                            @if (t.IsCompleted)
+                            {
+                                <i class="fa-solid fa-check" style="color:#fff; font-size:10px;"></i>
+                            }
+                        </div>
+                        <span style="flex:1; font-size:13px; @(t.IsCompleted ? "text-decoration:line-through;" : "")">
+                            @t.Title
+                        </span>
+                        <span class="badge @GetPriorityBadge(t.Priority)" style="font-size:10px;">
+                            @GetPriorityLabel(t.Priority)
+                        </span>
+                    </div>
+                }
+                @if (_dayNotes.Count > 0)
+                {
+                    <div style="border-top:1px solid var(--border); margin: 10px 0 12px;"></div>
+                }
+            }
+
+            @if (_dayNotes.Count == 0 && _dayTasks.Count == 0 && !_showNoteForm)
             {
                 <div class="text-center text-muted" style="padding: 24px 0;">
                     <p style="font-size: 24px; margin-bottom: 8px;"><i class="fa-regular fa-clipboard icon-xl"></i></p>
-                    <p class="text-sm">Nenhuma anotação para este dia.</p>
+                    <p class="text-sm">Nenhuma anotação ou tarefa para este dia.</p>
                 </div>
             }
 
@@ -77,14 +114,16 @@
             {
                 var n = note;
                 <div style="background: var(--bg-elevated);
-                            border-left: 3px solid @(n.Color ?? "var(--accent-purple)");
-                            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-                            padding: 10px 14px; margin-bottom: 8px;">
+                    border-left: 3px solid @(n.Color ?? "var(--accent-purple)");
+                    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+                    padding: 10px 14px; margin-bottom: 8px;">
                     <p style="font-size: 13.5px; white-space: pre-wrap;">@n.Content</p>
                     <div class="flex justify-between items-center mt-2">
                         <span class="text-sm text-muted">@n.CreatedAt.ToString("HH:mm")</span>
                         <button class="btn btn-danger btn-icon" style="font-size:11px; padding:3px 7px;"
-                                @onclick="() => DeleteNote(n.Id)">✕</button>
+                                @onclick="() => DeleteNote(n.Id)">
+                            ✕
+                        </button>
                     </div>
                 </div>
             }
@@ -93,24 +132,32 @@
 </div>
 
 @code {
-    private DateTime _selected    = DateTime.Today;
+    private DateTime _selected = DateTime.Today;
     private DateTime _currentDate = DateTime.Today;
 
-    private List<DateTime>    _calendarDays = new();
-    private List<CalendarNote> _dayNotes    = new();
-    private HashSet<DateTime>  _noteDates   = new();
+    private List<DateTime> _calendarDays = new();
+    private List<CalendarNote> _dayNotes = new();
+    private HashSet<DateTime> _activeDates = new();
+    private List<TodoItem> _dayTasks = new();
 
-    private bool   _showNoteForm;
+    private bool _showNoteForm;
     private string _noteContent = "";
 
     protected override async Task OnInitializedAsync()
     {
         CalSvc.OnChanged += HandleChanged;
+        TaskSvc.OnChanged += HandleTaskChanged;
         BuildCalendar();
         await RefreshAsync();
     }
 
     private async void HandleChanged()
+    {
+        await RefreshAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void HandleTaskChanged()
     {
         await RefreshAsync();
         await InvokeAsync(StateHasChanged);
@@ -127,16 +174,17 @@
 
     private async Task RefreshAsync()
     {
-        var monthNotes = await CalSvc.GetForMonthAsync(_currentDate.Year, _currentDate.Month);
-        _noteDates = monthNotes.Select(n => n.Date.Date).ToHashSet();
-        _dayNotes  = await CalSvc.GetForDayAsync(_selected);
+        _activeDates = await CalSvc.GetActiveDatesAsync(_currentDate.Year, _currentDate.Month, TaskSvc);
+        _dayNotes = await CalSvc.GetForDayAsync(_selected);
+        _dayTasks = await TaskSvc.GetCalendarTasksForDayAsync(_selected);
     }
 
     private async Task SelectDay(DateTime day)
     {
-        _selected     = day;
+        _selected = day;
         _showNoteForm = false;
-        _dayNotes     = await CalSvc.GetForDayAsync(day);
+        _dayNotes = await CalSvc.GetForDayAsync(day);
+        _dayTasks = await TaskSvc.GetCalendarTasksForDayAsync(day);
     }
 
     private void PrevMonth()
@@ -157,7 +205,7 @@
 
     private void GoToday()
     {
-        _selected    = DateTime.Today;
+        _selected = DateTime.Today;
         _currentDate = DateTime.Today;
         BuildCalendar();
         _ = RefreshAsync();
@@ -171,14 +219,38 @@
         if (string.IsNullOrWhiteSpace(_noteContent)) return;
         await CalSvc.SaveAsync(new CalendarNote
         {
-            Date    = _selected.Date,
+            Date = _selected.Date,
             Content = _noteContent.Trim()
         });
-        _noteContent  = "";
+        _noteContent = "";
         _showNoteForm = false;
     }
 
     private async Task DeleteNote(int id) => await CalSvc.DeleteAsync(id);
 
-    public void Dispose() => CalSvc.OnChanged -= HandleChanged;
+    private async Task ToggleTask(int id)
+    {
+        await TaskSvc.ToggleAsync(id);
+        _dayTasks = await TaskSvc.GetCalendarTasksForDayAsync(_selected);
+    }
+
+    private string GetPriorityBadge(Priority p) => p switch
+    {
+        Priority.High => "badge-coral",
+        Priority.Medium => "badge-amber",
+        _ => "badge-teal"
+    };
+
+    private string GetPriorityLabel(Priority p) => p switch
+    {
+        Priority.High => "Alta",
+        Priority.Medium => "Média",
+        _ => "Baixa"
+    };
+
+    public void Dispose()
+    {
+        CalSvc.OnChanged -= HandleChanged;
+        TaskSvc.OnChanged -= HandleTaskChanged;
+    }
 }

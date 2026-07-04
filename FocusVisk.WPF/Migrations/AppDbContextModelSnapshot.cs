@@ -23,255 +23,290 @@ namespace FocusVisk.Migrations
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("FocusVisk.Models.AppSettings", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AccentColor")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("AccentColor")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("BlockedSites")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("BlockedSites")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("FocusBlockEnabled")
-                        .HasColumnType("bit");
+                b.Property<bool>("FocusBlockEnabled")
+                    .HasColumnType("bit");
 
-                    b.Property<int>("LongBreakMinutes")
-                        .HasColumnType("int");
+                b.Property<int>("LongBreakMinutes")
+                    .HasColumnType("int");
 
-                    b.Property<string>("MainBgColor")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("MainBgColor")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("PlaySounds")
-                        .HasColumnType("bit");
+                b.Property<bool>("PlaySounds")
+                    .HasColumnType("bit");
 
-                    b.Property<int>("PomodoroDurationMinutes")
-                        .HasColumnType("int");
+                b.Property<int>("PomodoroDurationMinutes")
+                    .HasColumnType("int");
 
-                    b.Property<int>("SessionsBeforeLongBreak")
-                        .HasColumnType("int");
+                b.Property<int>("SessionsBeforeLongBreak")
+                    .HasColumnType("int");
 
-                    b.Property<int>("ShortBreakMinutes")
-                        .HasColumnType("int");
+                b.Property<int>("ShortBreakMinutes")
+                    .HasColumnType("int");
 
-                    b.Property<bool>("ShowNotifications")
-                        .HasColumnType("bit");
+                b.Property<bool>("ShowNotifications")
+                    .HasColumnType("bit");
 
-                    b.Property<string>("SidebarBgColor")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("SidebarBgColor")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Theme")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Theme")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Settings");
+                b.ToTable("Settings");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AccentColor = "#7C6AF7",
-                            BlockedSites = "youtube.com\nx.com\ninstagram.com\nreddit.com",
-                            FocusBlockEnabled = false,
-                            LongBreakMinutes = 15,
-                            MainBgColor = "#0F0F14",
-                            PlaySounds = true,
-                            PomodoroDurationMinutes = 25,
-                            SessionsBeforeLongBreak = 4,
-                            ShortBreakMinutes = 5,
-                            ShowNotifications = true,
-                            SidebarBgColor = "#16161E",
-                            Theme = "dark"
-                        });
-                });
+                b.HasData(
+                    new
+                    {
+                        Id = 1,
+                        AccentColor = "#7C6AF7",
+                        BlockedSites = "youtube.com\nx.com\ninstagram.com\nreddit.com",
+                        FocusBlockEnabled = false,
+                        LongBreakMinutes = 15,
+                        MainBgColor = "#0F0F14",
+                        PlaySounds = true,
+                        PomodoroDurationMinutes = 25,
+                        SessionsBeforeLongBreak = 4,
+                        ShortBreakMinutes = 5,
+                        ShowNotifications = true,
+                        SidebarBgColor = "#16161E",
+                        Theme = "dark"
+                    });
+            });
 
             modelBuilder.Entity("FocusVisk.Models.CalendarNote", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Color")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Color")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("Date")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("CalendarNotes");
-                });
+                b.ToTable("CalendarNotes");
+            });
 
             modelBuilder.Entity("FocusVisk.Models.FinancaTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                b.Property<decimal>("Amount")
+                    .HasPrecision(18, 2)
+                    .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Category")
-                        .HasColumnType("int");
+                b.Property<int>("Category")
+                    .HasColumnType("int");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Description")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
+                b.Property<int>("Type")
+                    .HasColumnType("int");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Transactions");
-                });
+                b.ToTable("Transactions");
+            });
 
             modelBuilder.Entity("FocusVisk.Models.PomodoroSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("CompletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<int>("DurationMinutes")
-                        .HasColumnType("int");
+                b.Property<int>("DurationMinutes")
+                    .HasColumnType("int");
 
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("StartedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("TaskTitle")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("TaskTitle")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("WasCompleted")
-                        .HasColumnType("bit");
+                b.Property<bool>("WasCompleted")
+                    .HasColumnType("bit");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("PomodoroSessions");
-                });
+                b.ToTable("PomodoroSessions");
+            });
 
             modelBuilder.Entity("FocusVisk.Models.QuickNote", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Content")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsPinned")
-                        .HasColumnType("bit");
+                b.Property<bool>("IsPinned")
+                    .HasColumnType("bit");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("UpdatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("QuickNotes");
-                });
+                b.ToTable("QuickNotes");
+            });
 
             modelBuilder.Entity("FocusVisk.Models.SavingGoal", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("MonthYear")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("MonthYear")
+                    .HasColumnType("datetime2");
 
-                    b.Property<decimal>("TargetAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                b.Property<decimal>("TargetAmount")
+                    .HasPrecision(18, 2)
+                    .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("SavingGoals");
-                });
+                b.ToTable("SavingGoals");
+            });
 
             modelBuilder.Entity("FocusVisk.Models.TodoItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("CompletedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Description")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("DueDate")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
+                b.Property<bool>("IsCompleted")
+                    .HasColumnType("bit");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("int");
+                b.Property<bool>("IsRecurring")
+                    .HasColumnType("bit");
 
-                    b.Property<string>("Tag")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<DateTime?>("LastAlertFiredAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                b.Property<int?>("ParentId")
+                    .HasColumnType("int");
 
-                    b.HasKey("Id");
+                b.Property<int>("Priority")
+                    .HasColumnType("int");
 
-                    b.ToTable("Todos");
-                });
+                b.Property<int?>("RecurrenceType")
+                    .HasColumnType("int");
+
+                b.Property<TimeSpan?>("ScheduledTime")
+                    .HasColumnType("time");
+
+                b.Property<bool>("ShowInCalendar")
+                    .HasColumnType("bit");
+
+                b.Property<string>("Tag")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.HasKey("Id");
+
+                b.HasIndex("ParentId");
+
+                b.ToTable("Todos");
+            });
+
+            modelBuilder.Entity("FocusVisk.Models.TodoItem", b =>
+            {
+                b.HasOne("FocusVisk.Models.TodoItem", "Parent")
+                    .WithMany("SubTasks")
+                    .HasForeignKey("ParentId")
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                b.Navigation("Parent");
+            });
+
+            modelBuilder.Entity("FocusVisk.Models.TodoItem", b =>
+            {
+                b.Navigation("SubTasks");
+            });
 #pragma warning restore 612, 618
         }
     }

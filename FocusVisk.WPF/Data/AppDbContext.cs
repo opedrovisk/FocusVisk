@@ -27,6 +27,16 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SavingGoal>()
             .Property(g => g.TargetAmount)
             .HasPrecision(18, 2);
+
+        modelBuilder.Entity<TodoItem>()
+            .Property(t => t.RecurrenceType)
+            .HasConversion<int?>();
+
+        modelBuilder.Entity<TodoItem>()
+            .HasMany(t => t.SubTasks)
+            .WithOne(t => t.Parent)
+            .HasForeignKey(t => t.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

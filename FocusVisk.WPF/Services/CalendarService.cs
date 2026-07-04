@@ -1,5 +1,6 @@
 ﻿using FocusVisk.Data;
 using FocusVisk.Models;
+using FocusVisk.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -27,6 +28,17 @@ public class CalendarService
         return await db.CalendarNotes
             .Where(n => n.Date.Date == date.Date)
             .ToListAsync();
+    }
+    public async Task<HashSet<DateTime>> GetActiveDatesAsync(int year, int month, TaskService taskSvc)
+    {
+        var notes = await GetForMonthAsync(year, month);
+        var tasks = await taskSvc.GetCalendarTasksForMonthAsync(year, month);
+
+        var dates = notes.Select(n => n.Date.Date)
+            .Concat(tasks.Where(t => t.DueDate.HasValue).Select(t => t.DueDate!.Value.Date))
+            .ToHashSet();
+
+        return dates;
     }
 
     public async Task SaveAsync(CalendarNote note)

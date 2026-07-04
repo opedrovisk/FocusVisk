@@ -6,14 +6,17 @@ namespace FocusVisk;
 public partial class MainWindow : Window
 {
     private readonly PomodoroService _pomodoro;
+    private readonly AlertService _alertService;
     private bool _isExiting = false;
 
-    public MainWindow(PomodoroService pomodoro)
+    public MainWindow(PomodoroService pomodoro, AlertService alertService)
     {
         InitializeComponent();
         _pomodoro = pomodoro;
+        _alertService = alertService;
 
         Resources.Add("services", App.Services);
+        _alertService.SetTrayIcon(TrayIcon);
 
         _pomodoro.OnTick += (remaining, isRunning) =>
         {
@@ -29,9 +32,7 @@ public partial class MainWindow : Window
     private void Window_StateChanged(object sender, EventArgs e)
     {
         if (WindowState == WindowState.Minimized)
-        {
             Hide();
-        }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -52,11 +53,14 @@ public partial class MainWindow : Window
         ShowApp();
     }
 
-    private void TrayNewTask_Click(object sender, RoutedEventArgs e)
+    private async void TrayNewTask_Click(object sender, RoutedEventArgs e)
     {
         ShowApp();
-        BlazorView.WebView?.CoreWebView2?.ExecuteScriptAsync(
-            "window.focusApp?.navigateTo('tasks')");
+
+        await Task.Delay(300);
+
+        await (BlazorView.WebView?.CoreWebView2?.ExecuteScriptAsync(
+            "window.focusApp?.navigateTo('tasks')") ?? Task.FromResult(""));
     }
 
     private void TrayExit_Click(object sender, RoutedEventArgs e)

@@ -41,6 +41,7 @@ public partial class App : Application
         services.AddSingleton<StatsService>();
         services.AddSingleton<ThemeService>();
         services.AddSingleton<FinancasService>();
+        services.AddSingleton<AlertService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG

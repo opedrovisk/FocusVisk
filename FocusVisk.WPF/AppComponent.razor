@@ -2,6 +2,7 @@
 @using FocusVisk.Shared
 @inject ThemeService ThemeSvc
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="app-shell">
     <Sidebar CurrentPage="@_currentPage" OnNavigate="NavigateTo" />
@@ -24,14 +25,14 @@
             case "notes":
                 <NotesPage />
                 break;
+            case "financas":
+                <FinancasPage />
+                break;
             case "settings":
                 <SettingsPage />
                 break;
             default:
                 <Dashboard />
-                break;
-            case "financas":
-                <FinancasPage />
                 break;
         }
     </main>
@@ -39,27 +40,84 @@
 
 @code {
     private string _currentPage = "dashboard";
+    private DotNetObjectReference<AppComponent>? _selfRef;
 
     protected override async Task OnInitializedAsync()
     {
         await ThemeSvc.LoadAsync();
-        ThemeSvc.OnThemeChanged += async () =>
-        {
-            await ApplyThemeAsync();
-            await InvokeAsync(StateHasChanged);
-        };
+        ThemeSvc.OnThemeChanged += OnThemeChangedHandler;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // OnAfterRenderAsync garante que o DOM existe,
+        // mas no Blazor Hybrid o app.js pode ainda não ter executado.
+        await WaitForFocusAppAsync();
+
         await ApplyThemeAsync();
+
+        _selfRef?.Dispose();
+        _selfRef = DotNetObjectReference.Create(this);
+        await SafeJs("focusApp.registerNavigationHandler", _selfRef);
+    }
+
+    private async void OnThemeChangedHandler()
+    {
+        await ApplyThemeAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ApplyThemeAsync()
     {
         var css = ThemeSvc.BuildCssVariables();
-        await JS.InvokeVoidAsync("focusApp.setThemeVars", css);
+        var escaped = css.Replace("\\", "\\\\").Replace("'", "\\'")
+                         .Replace("\r", "").Replace("\n", " ");
+        var script = "(function(){" +
+                     "var e=document.getElementById('theme-vars');" +
+                     "if(!e){e=document.createElement('style');e.id='theme-vars';document.head.appendChild(e);}" +
+                     $"e.textContent='{escaped}';" +
+                     "})();";
+        try { await JS.InvokeVoidAsync("eval", script); } catch { }
+    }
+
+    private async Task WaitForFocusAppAsync()
+    {
+        for (int i = 0; i < 30; i++)
+        {
+            try
+            {
+                var ok = await JS.InvokeAsync<bool>("eval", "typeof window.focusApp !== 'undefined'");
+                if (ok) return;
+            }
+            catch { }
+            await Task.Delay(100);
+        }
+    }
+
+    private async Task SafeJs(string fn, params object?[] args)
+    {
+        try { await JS.InvokeVoidAsync(fn, args); } catch { }
     }
 
     private void NavigateTo(string page)
     {
         _currentPage = page;
         StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void NavigateFromJs(string page)
+    {
+        _currentPage = page;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        ThemeSvc.OnThemeChanged -= OnThemeChangedHandler;
+        _selfRef?.Dispose();
+        await Task.CompletedTask;
     }
 }
