@@ -41,9 +41,11 @@ public class AppSettings
     public bool FocusBlockEnabled { get; set; } = false;
     public string BlockedSites { get; set; } = "youtube.com\nx.com\ninstagram.com\nreddit.com";
 
-    // ── Aparência ──────────────────────────────────────────────────────────
-    public string Theme          { get; set; } = "dark";    
-    public string AccentColor    { get; set; } = "#7C6AF7"; 
-    public string SidebarBgColor { get; set; } = "#16161E"; 
-    public string MainBgColor    { get; set; } = "#0F0F14";
+    public string Theme { get; set; } = "dark";
+    public string AccentColor { get; set; } = "#7C6AF7";
+    public string SidebarBgColor { get; set; } = "#16161E";
+    public string MainBgColor { get; set; } = "#0F0F14";
+
+    public string? MidiaResenhaPath { get; set; }
+    public bool MidiaResenhaIsVideo { get; set; }
 }

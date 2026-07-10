@@ -1,6 +1,8 @@
+@using Microsoft.AspNetCore.Components.Forms
 @inject PomodoroService Pomodoro
 @inject FocusBlockerService Blocker
 @inject ThemeService ThemeSvc
+@inject IJSRuntime JS
 
 <div class="page-header">
     <h1 class="page-title">Configurações</h1>
@@ -164,6 +166,103 @@
         }
     </div>
 
+    <div class="card resenha-card @(ThemeSvc.ResenhaAtiva ? "resenha-ativa" : "")">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 style="font-size:15px; font-weight:600;">
+                    👀 Modo Resenha
+                </h2>
+                <p class="text-sm text-muted mt-1">
+                    @(ThemeSvc.ResenhaAtiva ? "MODO RESENHA" : "Averiguarás?")
+                </p>
+            </div>
+            <button class="btn resenha-toggle @(ThemeSvc.ResenhaAtiva ? "resenha-on" : "resenha-off")"
+                    @onclick="ToggleResenha">
+                @if (ThemeSvc.ResenhaAtiva)
+                {
+                    <span>👀 ON</span>
+                }
+                else
+                {
+                    <span>💤 OFF</span>
+                }
+            </button>
+        </div>
+
+        @if (_showResenhaConfirm)
+        {
+            <div class="resenha-confirm-box">
+                <p style="font-size:14px; font-weight:600; margin-bottom:8px;">
+                    👀 Tem certeza que ativarás o modo resenha?
+                </p>
+                <p class="text-sm text-muted" style="margin-bottom:16px;">
+                    O sistema entrará na resenha. Não há como escapar após ativado.
+                </p>
+                <div class="flex gap-2">
+                    <button class="btn btn-primary" @onclick="ConfirmarResenha">Sim, ativar a resenha</button>
+                    <button class="btn btn-ghost" @onclick="CancelarResenha">Compensa não</button>
+                </div>
+            </div>
+        }
+
+        @if (ThemeSvc.ResenhaAtiva)
+        {
+            <div class="resenha-midia-section">
+                <div class="resenha-midia-divider"></div>
+
+                <p style="font-size:13px; font-weight:600; margin-bottom:6px;">
+                    <i class="fa-solid fa-film"></i> Mídia do bloqueio
+                </p>
+                <p class="text-sm text-muted" style="margin-bottom:14px;">
+                    Escolha um vídeo ou imagem para abrir automaticamente quando alguém tentar acessar um site bloqueado.
+                </p>
+
+                <div class="flex gap-2 items-center flex-wrap">
+                    <label class="btn btn-ghost resenha-upload-label">
+                        <i class="fa-solid fa-upload"></i>
+                        @(ThemeSvc.MidiaResenhaPath != null ? "Trocar arquivo" : "Escolher arquivo")
+                        <InputFile OnChange="OnMidiaSelected" accept="image/*,video/*"
+                                   style="display:none;" />
+                    </label>
+
+                    @if (ThemeSvc.MidiaResenhaPath != null)
+                    {
+                        <span class="text-sm text-muted resenha-midia-filename">
+                            <i class="fa-solid @(ThemeSvc.MidiaResenhaIsVideo ? "fa-film" : "fa-image")"></i>
+                            @_midiaFileName
+                        </span>
+
+                        <button class="btn btn-ghost btn-icon" @onclick="LimparMidia" title="Remover">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    }
+                </div>
+
+                @if (_midiaUploading)
+                {
+                    <p class="text-sm text-muted" style="margin-top:8px;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Salvando...
+                    </p>
+                }
+
+                @if (!string.IsNullOrEmpty(_midiaErro))
+                {
+                    <p style="margin-top:8px; font-size:12px; color:var(--accent-coral);">
+                        <i class="fa-solid fa-triangle-exclamation"></i> @_midiaErro
+                    </p>
+                }
+
+                @if (ThemeSvc.MidiaResenhaPath != null && !_midiaUploading)
+                {
+                    <p class="text-sm text-muted" style="margin-top:10px;">
+                        <i class="fa-solid fa-circle-check" style="color:var(--accent-green);"></i>
+                        Configurado — abrirá em tela cheia ao detectar acesso a site bloqueado.
+                    </p>
+                }
+            </div>
+        }
+    </div>
+
     <div class="card">
         <h2 style="font-size:15px; font-weight:600; margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> Sobre o FocusVisk</h2>
         <p class="text-sm text-muted">Versão 1.0.0</p>
@@ -194,6 +293,12 @@
     private string _mainBgColor = "#0F0F14";
     private bool _themeSaved;
 
+    private bool _showResenhaConfirm = false;
+
+    private string? _midiaFileName;
+    private string? _midiaErro;
+    private bool _midiaUploading = false;
+
     protected override async Task OnInitializedAsync()
     {
         _focusMin = Pomodoro.FocusDurationMinutes;
@@ -207,6 +312,9 @@
         _showCustomColors = ThemeSvc.Theme == "custom";
 
         _blockedSites = await Blocker.GetBlockedSitesAsync();
+
+        if (ThemeSvc.MidiaResenhaPath != null)
+            _midiaFileName = System.IO.Path.GetFileName(ThemeSvc.MidiaResenhaPath);
     }
 
     private async Task SavePomodoro()
@@ -274,6 +382,108 @@
         StateHasChanged();
         await Task.Delay(2000);
         _themeSaved = false;
+        StateHasChanged();
+    }
+
+    private void ToggleResenha()
+    {
+        if (ThemeSvc.ResenhaAtiva)
+            _ = DesativarResenhaAsync();
+        else
+            _showResenhaConfirm = true;
+    }
+
+    private async Task ConfirmarResenha()
+    {
+        _showResenhaConfirm = false;
+        ThemeSvc.SetResenha(true);
+        StateHasChanged();
+        await ThemeSvc.SetPresetAsync("light");
+        await JS.InvokeVoidAsync("focusApp.ativarResenha");
+    }
+
+    private void CancelarResenha()
+    {
+        _showResenhaConfirm = false;
+    }
+
+    private async Task DesativarResenhaAsync()
+    {
+        ThemeSvc.SetResenha(false);
+        _midiaFileName = null;
+        _midiaErro = null;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("focusApp.desativarResenha");
+        await ThemeSvc.SetPresetAsync("dark");
+    }
+
+    private async Task OnMidiaSelected(InputFileChangeEventArgs e)
+    {
+        _midiaErro = null;
+        var file = e.File;
+
+        var allowed = new[] {
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "video/mp4", "video/webm", "video/ogg", "video/quicktime"
+        };
+
+        if (!allowed.Contains(file.ContentType))
+        {
+            _midiaErro = "Formato não suportado. Use imagens (jpg, png, gif, webp) ou vídeos (mp4, webm).";
+            return;
+        }
+
+        const long maxBytes = 500L * 1024 * 1024;
+        if (file.Size > maxBytes)
+        {
+            _midiaErro = "Arquivo muito grande. Máximo 500 MB.";
+            return;
+        }
+
+        _midiaUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            var appData = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "FocusVisk");
+            System.IO.Directory.CreateDirectory(appData);
+
+            var ext = System.IO.Path.GetExtension(file.Name);
+            var destPath = System.IO.Path.Combine(appData, $"resenha_midia{ext}");
+
+            if (ThemeSvc.MidiaResenhaPath != null &&
+                ThemeSvc.MidiaResenhaPath != destPath &&
+                System.IO.File.Exists(ThemeSvc.MidiaResenhaPath))
+            {
+                try { System.IO.File.Delete(ThemeSvc.MidiaResenhaPath); } catch { }
+            }
+
+            using var stream = file.OpenReadStream(maxBytes);
+            using var fs = System.IO.File.Create(destPath);
+            await stream.CopyToAsync(fs);
+
+            var isVideo = file.ContentType.StartsWith("video/");
+            await ThemeSvc.SetMidiaResenhaAsync(destPath, isVideo);
+            _midiaFileName = file.Name;
+        }
+        catch (Exception ex)
+        {
+            _midiaErro = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            _midiaUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LimparMidia()
+    {
+        await ThemeSvc.LimparMidiaResenhaAsync();
+        _midiaFileName = null;
+        _midiaErro = null;
         StateHasChanged();
     }
 }

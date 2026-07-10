@@ -1,6 +1,7 @@
 ﻿using FocusVisk.Data;
 using FocusVisk.Models;
 using Microsoft.Extensions.DependencyInjection;
+using System.IO;
 
 public class ThemeService
 {
@@ -11,7 +12,13 @@ public class ThemeService
     public string SidebarBgColor { get; private set; } = "#16161E";
     public string MainBgColor { get; private set; } = "#0F0F14";
 
+    public bool ResenhaAtiva { get; private set; } = false;
+    public string? MidiaResenhaPath { get; private set; }
+    public bool MidiaResenhaIsVideo { get; private set; }
+
     public event Action? OnThemeChanged;
+    public event Action? OnResenhaChanged;
+    public event Action? OnResenhaBloqueiou;
 
     public ThemeService(IServiceProvider services) => _services = services;
 
@@ -21,9 +28,15 @@ public class ThemeService
     public async Task LoadAsync()
     {
         using var db = Db();
-        var settings = await db.Settings.FindAsync(1);
-        if (settings == null) return;
-        Apply(settings.Theme, settings.AccentColor, settings.SidebarBgColor, settings.MainBgColor);
+        var s = await db.Settings.FindAsync(1);
+        if (s == null) return;
+        Apply(s.Theme, s.AccentColor, s.SidebarBgColor, s.MainBgColor);
+
+        if (s.MidiaResenhaPath != null && File.Exists(s.MidiaResenhaPath))
+        {
+            MidiaResenhaPath = s.MidiaResenhaPath;
+            MidiaResenhaIsVideo = s.MidiaResenhaIsVideo;
+        }
     }
 
     public async Task SetPresetAsync(string preset)
@@ -39,17 +52,62 @@ public class ThemeService
     public async Task SetCustomAsync(string accent, string sidebar, string main)
         => await SaveAsync("custom", accent, sidebar, main);
 
+    public void SetResenha(bool ativa)
+    {
+        ResenhaAtiva = ativa;
+        OnResenhaChanged?.Invoke();
+    }
+
+    public async Task SetMidiaResenhaAsync(string filePath, bool isVideo)
+    {
+        MidiaResenhaPath = filePath;
+        MidiaResenhaIsVideo = isVideo;
+
+        using var db = Db();
+        var s = await db.Settings.FindAsync(1);
+        if (s == null) return;
+        s.MidiaResenhaPath = filePath;
+        s.MidiaResenhaIsVideo = isVideo;
+        db.Settings.Update(s);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task LimparMidiaResenhaAsync()
+    {
+        if (MidiaResenhaPath != null)
+        {
+            try { File.Delete(MidiaResenhaPath); } catch { }
+        }
+
+        MidiaResenhaPath = null;
+        MidiaResenhaIsVideo = false;
+
+        using var db = Db();
+        var s = await db.Settings.FindAsync(1);
+        if (s == null) return;
+        s.MidiaResenhaPath = null;
+        s.MidiaResenhaIsVideo = false;
+        db.Settings.Update(s);
+        await db.SaveChangesAsync();
+    }
+
+    public void DispararBloqueio()
+    {
+        if (ResenhaAtiva && MidiaResenhaPath != null)
+            OnResenhaBloqueiou?.Invoke();
+    }
+
     private async Task SaveAsync(string theme, string accent, string sidebar, string main)
     {
         using var db = Db();
-        var settings = await db.Settings.FindAsync(1) ?? new AppSettings { Id = 1 };
-        settings.Theme = theme;
-        settings.AccentColor = accent;
-        settings.SidebarBgColor = sidebar;
-        settings.MainBgColor = main;
+        var s = await db.Settings.FindAsync(1) ?? new AppSettings { Id = 1 };
+        s.Theme = theme;
+        s.AccentColor = accent;
+        s.SidebarBgColor = sidebar;
+        s.MainBgColor = main;
 
-        if (settings.Id == 0) db.Settings.Add(settings);
-        else db.Settings.Update(settings);
+        if (s.Id == 0) db.Settings.Add(s);
+        else db.Settings.Update(s);
         await db.SaveChangesAsync();
 
         Apply(theme, accent, sidebar, main);
@@ -110,11 +168,9 @@ public class ThemeService
             var r = Convert.ToInt32(hex[..2], 16);
             var g = Convert.ToInt32(hex[2..4], 16);
             var b = Convert.ToInt32(hex[4..6], 16);
-
             r = Math.Min(255, r + (int)(255 * amount));
             g = Math.Min(255, g + (int)(255 * amount));
             b = Math.Min(255, b + (int)(255 * amount));
-
             return $"#{r:X2}{g:X2}{b:X2}";
         }
         catch { return hex; }

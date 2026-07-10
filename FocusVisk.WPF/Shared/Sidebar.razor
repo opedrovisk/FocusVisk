@@ -1,6 +1,15 @@
-﻿<nav class="sidebar">
+﻿@inject ThemeService ThemeSvc
+@implements IDisposable
+
+<nav class="sidebar">
     <div class="sidebar-logo">
-        <div class="logo-text">Focus<span>Visk</span></div>
+        <div class="logo-text">
+            @if (ThemeSvc.ResenhaAtiva)
+            {
+                <span class="resenha-logo-eye">👀</span>
+            }
+            Focus<span>Visk</span>
+        </div>
     </div>
 
     <span class="nav-section-label">Principal</span>
@@ -47,4 +56,19 @@
 @code {
     [Parameter] public string CurrentPage { get; set; } = "dashboard";
     [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ThemeSvc.OnResenhaChanged += OnResenhaChangedHandler;
+    }
+
+    private void OnResenhaChangedHandler()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeSvc.OnResenhaChanged -= OnResenhaChangedHandler;
+    }
 }

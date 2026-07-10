@@ -963,3 +963,114 @@ html, body {
         color: var(--accent-coral);
         font-weight: 700;
     }
+
+/* ── Resenhando aqui hehe ──────────────────────────────────────────────────────────── */
+
+.resenha-logo-eye {
+    margin-right: 4px;
+    font-style: normal;
+    animation: resenha-eye-pulse 1.8s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes resenha-eye-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.25);
+        opacity: 0.8;
+    }
+}
+
+.resenha-card {
+    border: 1px solid var(--border);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+    .resenha-card.resenha-ativa {
+        border-color: rgba(246, 198, 68, 0.5);
+        box-shadow: 0 0 18px rgba(246, 198, 68, 0.12);
+    }
+
+.resenha-toggle {
+    min-width: 90px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+}
+
+    .resenha-toggle.resenha-off {
+        background: var(--bg-elevated);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+
+        .resenha-toggle.resenha-off:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+    .resenha-toggle.resenha-on {
+        background: var(--accent-purple);
+        color: #fff;
+        border: none;
+        box-shadow: 0 2px 10px rgba(124, 106, 247, 0.35);
+    }
+
+        .resenha-toggle.resenha-on:hover {
+            box-shadow: 0 2px 16px rgba(124, 106, 247, 0.55);
+            filter: brightness(1.1);
+            transform: scale(1.03);
+        }
+
+.resenha-confirm-box {
+    margin-top: 18px;
+    padding: 18px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    animation: resenha-slide-in 0.18s ease;
+}
+
+@keyframes resenha-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.resenha-midia-section {
+    margin-top: 4px;
+}
+
+.resenha-midia-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 18px 0;
+}
+
+.resenha-upload-label {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.resenha-midia-filename {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

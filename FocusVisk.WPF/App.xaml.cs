@@ -30,16 +30,16 @@ public partial class App : Application
     private static void ConfigureServices(ServiceCollection services)
     {
         services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=FocusViskDb;Trusted_Connection=True;"),
-    ServiceLifetime.Transient);
+            options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=FocusViskDb;Trusted_Connection=True;"),
+            ServiceLifetime.Transient);
 
         services.AddSingleton<PomodoroService>();
         services.AddSingleton<TaskService>();
         services.AddSingleton<CalendarService>();
         services.AddSingleton<NotesService>();
+        services.AddSingleton<ThemeService>();
         services.AddSingleton<FocusBlockerService>();
         services.AddSingleton<StatsService>();
-        services.AddSingleton<ThemeService>();
         services.AddSingleton<FinancasService>();
         services.AddSingleton<AlertService>();
 

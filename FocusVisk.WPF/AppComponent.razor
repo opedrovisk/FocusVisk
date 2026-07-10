@@ -46,16 +46,14 @@
     {
         await ThemeSvc.LoadAsync();
         ThemeSvc.OnThemeChanged += OnThemeChangedHandler;
+        ThemeSvc.OnResenhaBloqueiou += OnResenhaBloqueiouHandler;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
 
-        // OnAfterRenderAsync garante que o DOM existe,
-        // mas no Blazor Hybrid o app.js pode ainda não ter executado.
         await WaitForFocusAppAsync();
-
         await ApplyThemeAsync();
 
         _selfRef?.Dispose();
@@ -67,6 +65,19 @@
     {
         await ApplyThemeAsync();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnResenhaBloqueiouHandler()
+    {
+        var path = ThemeSvc.MidiaResenhaPath;
+        var isVideo = ThemeSvc.MidiaResenhaIsVideo;
+        if (string.IsNullOrEmpty(path)) return;
+
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            var player = new FocusVisk.ResenhaPlayerWindow(path, isVideo);
+            player.Show();
+        });
     }
 
     private async Task ApplyThemeAsync()
@@ -117,6 +128,7 @@
     public async ValueTask DisposeAsync()
     {
         ThemeSvc.OnThemeChanged -= OnThemeChangedHandler;
+        ThemeSvc.OnResenhaBloqueiou -= OnResenhaBloqueiouHandler;
         _selfRef?.Dispose();
         await Task.CompletedTask;
     }
