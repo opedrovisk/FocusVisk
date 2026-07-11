@@ -24,7 +24,10 @@ public partial class App : Application
         db.Database.Migrate();
 
         var mainWindow = Services.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+
+        bool startInBackground = e.Args.Contains("--background");
+        if (!startInBackground)
+            mainWindow.Show();
     }
 
     private static void ConfigureServices(ServiceCollection services)
@@ -43,6 +46,7 @@ public partial class App : Application
         services.AddSingleton<FinancasService>();
         services.AddSingleton<AlertService>();
         services.AddSingleton<HabitService>();
+        services.AddSingleton<StartupService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG

@@ -29,14 +29,26 @@ public class CalendarService
             .Where(n => n.Date.Date == date.Date)
             .ToListAsync();
     }
+
     public async Task<HashSet<DateTime>> GetActiveDatesAsync(int year, int month, TaskService taskSvc)
     {
         var notes = await GetForMonthAsync(year, month);
         var tasks = await taskSvc.GetCalendarTasksForMonthAsync(year, month);
 
-        var dates = notes.Select(n => n.Date.Date)
-            .Concat(tasks.Where(t => t.DueDate.HasValue).Select(t => t.DueDate!.Value.Date))
-            .ToHashSet();
+        var firstDay = new DateTime(year, month, 1);
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        var dates = notes.Select(n => n.Date.Date).ToHashSet();
+
+        foreach (var task in tasks)
+        {
+            for (int d = 1; d <= daysInMonth; d++)
+            {
+                var day = firstDay.AddDays(d - 1);
+                if (TaskService.AppearsOnDay(task, day))
+                    dates.Add(day);
+            }
+        }
 
         return dates;
     }

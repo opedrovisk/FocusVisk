@@ -1,7 +1,8 @@
 @inject NotesService NotesSvc
 @implements IDisposable
 
-<div class="notes-layout">
+<div class="notes-layout @(_sidebarOpen ? "sidebar-open" : "sidebar-closed")">
+
     <aside class="notes-sidebar">
         <div class="notes-sidebar-header">
             <span class="notes-sidebar-title"><i class="fa-solid fa-folder-open"></i> Pastas</span>
@@ -80,24 +81,35 @@
 
     <div class="notes-main">
         <div class="page-header flex justify-between items-center">
-            <div>
-                <h1 class="page-title">
-                    @if (_activeFolder == null)
+            <div class="flex items-center gap-3">
+                <button class="notes-sidebar-toggle @(_sidebarOpen ? "open" : "")"
+                        title="@(_sidebarOpen ? "Fechar pastas" : "Abrir pastas")"
+                        @onclick="ToggleSidebar">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    @if (_activeFolder != null && _activeFolder != SemPasta)
                     {
-                        <text>Notas rápidas</text>
+                        <span class="notes-sidebar-toggle-badge"></span>
                     }
-                    else if (_activeFolder == "__sem_pasta__")
-                    {
+                </button>
+                <div>
+                    <h1 class="page-title">
+                        @if (_activeFolder == null)
+                        {
+                            <text>Notas rápidas</text>
+                        }
+                        else if (_activeFolder == SemPasta)
+                        {
 
-                        <text>Sem pasta</text>
-                    }
-                    else
-                    {
+                            <text>Sem pasta</text>
+                        }
+                        else
+                        {
 
-                        @_activeFolder
-                    }
-                </h1>
-                <p class="page-subtitle">@_filteredNotes.Count nota(s)</p>
+                            @_activeFolder
+                        }
+                    </h1>
+                    <p class="page-subtitle">@_filteredNotes.Count nota(s)</p>
+                </div>
             </div>
             <div class="flex gap-2 items-center">
                 <div class="notes-search-wrap">
@@ -235,6 +247,7 @@
     private string _newFolderName = string.Empty;
     private string? _renamingFolder;
     private string _renameFolderValue = string.Empty;
+    private bool _sidebarOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -259,7 +272,7 @@
     {
         IEnumerable<QuickNote> source = _allNotes;
 
-        if (_activeFolder == "__sem_pasta__")
+        if (_activeFolder == SemPasta)
             source = source.Where(n => string.IsNullOrEmpty(n.FolderName));
         else if (_activeFolder != null)
             source = source.Where(n => n.FolderName == _activeFolder);
@@ -272,6 +285,8 @@
             .ThenByDescending(n => n.UpdatedAt)
             .ToList();
     }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
     private void OnSearch(ChangeEventArgs e)
     {
@@ -294,7 +309,7 @@
     private void NewNote() => _editing = new QuickNote
     {
         Title = "Nova nota",
-        FolderName = _activeFolder is null or "__sem_pasta__" ? null : _activeFolder
+        FolderName = _activeFolder is null or SemPasta ? null : _activeFolder
     };
 
     private void EditNote(QuickNote note) => _editing = new QuickNote

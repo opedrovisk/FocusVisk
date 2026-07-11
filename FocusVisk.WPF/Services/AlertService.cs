@@ -1,19 +1,18 @@
 ﻿using FocusVisk.Data;
 using FocusVisk.Models;
-using H.NotifyIcon;
-using H.NotifyIcon.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Windows.UI.Notifications;
 
 namespace FocusVisk.Services;
+
 public class AlertService : IDisposable
 {
     private readonly IServiceProvider _services;
     private readonly System.Threading.Timer _timer;
-
-    private TaskbarIcon? _trayIcon;
-
     private DateTime _lastCheck = DateTime.MinValue;
+
+    private const string AppId = "FocusVisk";
 
     public AlertService(IServiceProvider services)
     {
@@ -22,19 +21,14 @@ public class AlertService : IDisposable
         _timer = new System.Threading.Timer(
             callback: _ => CheckAlertsAsync().ConfigureAwait(false),
             state: null,
-            dueTime: TimeSpan.FromSeconds(10),  
-            period: TimeSpan.FromSeconds(30)   
+            dueTime: TimeSpan.FromSeconds(5),
+            period: TimeSpan.FromSeconds(20)
         );
     }
-    public void SetTrayIcon(TaskbarIcon icon) => _trayIcon = icon;
 
     private async Task CheckAlertsAsync()
     {
         var now = DateTime.Now;
-
-        if (now.Hour == _lastCheck.Hour && now.Minute == _lastCheck.Minute)
-            return;
-
         _lastCheck = now;
 
         try
@@ -48,37 +42,36 @@ public class AlertService : IDisposable
 
             foreach (var task in tasks)
             {
-                if (ShouldFireAlert(task, now))
-                {
-                    FireNotification(task);
+                if (!ShouldFireAlert(task, now)) continue;
 
-                    task.LastAlertFiredAt = now;
+                FireToast(task);
 
-                    if (!task.IsRecurring)
-                        task.ScheduledTime = null;
+                task.LastAlertFiredAt = now;
 
-                    db.Todos.Update(task);
-                }
+                if (!task.IsRecurring)
+                    task.ScheduledTime = null;
+
+                db.Todos.Update(task);
             }
 
             await db.SaveChangesAsync();
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     private static bool ShouldFireAlert(TodoItem task, DateTime now)
     {
         if (task.ScheduledTime is not TimeSpan time) return false;
 
-        if (now.Hour != time.Hours || now.Minute != time.Minutes)
+        var scheduledToday = now.Date.Add(time);
+        var diffMinutes = (now - scheduledToday).TotalMinutes;
+
+        if (diffMinutes < 0 || diffMinutes >= 2)
             return false;
 
         if (task.LastAlertFiredAt.HasValue &&
-            task.LastAlertFiredAt.Value.Hour == now.Hour &&
-            task.LastAlertFiredAt.Value.Minute == now.Minute &&
-            task.LastAlertFiredAt.Value.Date == now.Date)
+            task.LastAlertFiredAt.Value.Date == now.Date &&
+            Math.Abs((task.LastAlertFiredAt.Value - scheduledToday).TotalMinutes) < 2)
             return false;
 
         if (!task.IsRecurring)
@@ -90,43 +83,60 @@ public class AlertService : IDisposable
 
         return task.RecurrenceType switch
         {
-            Models.RecurrenceType.Daily => true,
-            Models.RecurrenceType.Weekdays => now.DayOfWeek is >= DayOfWeek.Monday
-                                                            and <= DayOfWeek.Friday,
-            Models.RecurrenceType.Weekly => task.DueDate.HasValue &&
-                                              now.DayOfWeek == task.DueDate.Value.DayOfWeek,
-            Models.RecurrenceType.Monthly => task.DueDate.HasValue &&
-                                              now.Day == task.DueDate.Value.Day,
+            RecurrenceType.Daily => true,
+            RecurrenceType.Weekdays => now.DayOfWeek is >= DayOfWeek.Monday and <= DayOfWeek.Friday,
+            RecurrenceType.Weekly => task.DueDate.HasValue && now.DayOfWeek == task.DueDate.Value.DayOfWeek,
+            RecurrenceType.Monthly => task.DueDate.HasValue && now.Day == task.DueDate.Value.Day,
             _ => false
         };
     }
 
-    private void FireNotification(TodoItem task)
+    private static void FireToast(TodoItem task)
     {
-        if (_trayIcon is null) return;
-
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        try
         {
             var recLabel = task.IsRecurring && task.RecurrenceType.HasValue
                 ? $" ({RecurrenceLabel(task.RecurrenceType.Value)})"
                 : string.Empty;
 
-            var title = $"⏰ FocusVisk — {task.Title}";
-            var msg = string.IsNullOrWhiteSpace(task.Description)
+            var title = $"⏰ {task.Title}";
+            var body = string.IsNullOrWhiteSpace(task.Description)
                 ? $"Hora de cuidar desta tarefa!{recLabel}"
                 : $"{task.Description}{recLabel}";
 
-            // API correta do H.NotifyIcon 2.x: ShowNotification(title, msg, NotificationIcon)
-            _trayIcon.ShowNotification(title, msg, NotificationIcon.Info);
-        });
+            var xml = $"""
+                <toast duration="short">
+                  <visual>
+                    <binding template="ToastGeneric">
+                      <text>{EscapeXml(title)}</text>
+                      <text>{EscapeXml(body)}</text>
+                    </binding>
+                  </visual>
+                  <audio src="ms-winsoundevent:Notification.Default" />
+                </toast>
+                """;
+
+            var doc = new Windows.Data.Xml.Dom.XmlDocument();
+            doc.LoadXml(xml);
+
+            var toast = new ToastNotification(doc);
+            ToastNotificationManager.CreateToastNotifier(AppId).Show(toast);
+        }
+        catch { }
     }
+
+    private static string EscapeXml(string text) =>
+        text.Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;");
 
     private static string RecurrenceLabel(RecurrenceType type) => type switch
     {
-        Models.RecurrenceType.Daily => "diário",
-        Models.RecurrenceType.Weekdays => "dias úteis",
-        Models.RecurrenceType.Weekly => "semanal",
-        Models.RecurrenceType.Monthly => "mensal",
+        RecurrenceType.Daily => "diário",
+        RecurrenceType.Weekdays => "dias úteis",
+        RecurrenceType.Weekly => "semanal",
+        RecurrenceType.Monthly => "mensal",
         _ => ""
     };
 

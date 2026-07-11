@@ -120,4 +120,16 @@ public class HabitService
         var cutoff = DateTime.Today.AddDays(-29);
         return habit.Logs.Count(l => l.Date.Date >= cutoff);
     }
+
+    public async Task<HashSet<DateTime>> GetLogsForMonthAsync(int habitId, int year, int month)
+    {
+        using var db = Db();
+        var first = new DateTime(year, month, 1);
+        var last = first.AddMonths(1);
+        var dates = await db.HabitLogs
+            .Where(l => l.HabitId == habitId && l.Date >= first && l.Date < last)
+            .Select(l => l.Date.Date)
+            .ToListAsync();
+        return dates.ToHashSet();
+    }
 }

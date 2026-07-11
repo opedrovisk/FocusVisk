@@ -3,6 +3,7 @@
 @inject FocusBlockerService Blocker
 @inject ThemeService ThemeSvc
 @inject IJSRuntime JS
+@inject FocusVisk.Services.StartupService StartupSvc
 
 <div class="page-header">
     <h1 class="page-title">Configurações</h1>
@@ -166,57 +167,27 @@
         }
     </div>
 
-    <div class="card resenha-card @(ThemeSvc.ResenhaAtiva ? "resenha-ativa" : "")">
-        <div class="flex justify-between items-center">
-            <div>
-                <h2 style="font-size:15px; font-weight:600;">
-                    👀 Modo Resenha
-                </h2>
-                <p class="text-sm text-muted mt-1">
-                    @(ThemeSvc.ResenhaAtiva ? "MODO RESENHA" : "Averiguarás?")
-                </p>
-            </div>
-            <button class="btn resenha-toggle @(ThemeSvc.ResenhaAtiva ? "resenha-on" : "resenha-off")"
-                    @onclick="ToggleResenha">
-                @if (ThemeSvc.ResenhaAtiva)
-                {
-                    <span>👀 ON</span>
-                }
-                else
-                {
-                    <span>💤 OFF</span>
-                }
-            </button>
-        </div>
-
-        @if (_showResenhaConfirm)
-        {
-            <div class="resenha-confirm-box">
-                <p style="font-size:14px; font-weight:600; margin-bottom:8px;">
-                    👀 Tem certeza que ativarás o modo resenha?
-                </p>
-                <p class="text-sm text-muted" style="margin-bottom:16px;">
-                    O sistema entrará na resenha. Não há como escapar após ativado.
-                </p>
-                <div class="flex gap-2">
-                    <button class="btn btn-primary" @onclick="ConfirmarResenha">Sim, ativar a resenha</button>
-                    <button class="btn btn-ghost" @onclick="CancelarResenha">Compensa não</button>
+    @if (ThemeSvc.ResenhaAtiva)
+    {
+        <div class="card resenha-card resenha-ativa">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 style="font-size:15px; font-weight:600;">👀 Modo Resenha</h2>
+                    <p class="text-sm text-muted mt-1">MODO RESENHA</p>
                 </div>
+                <button class="btn resenha-toggle resenha-on" @onclick="ToggleResenha">
+                    <span>👀 ON</span>
+                </button>
             </div>
-        }
 
-        @if (ThemeSvc.ResenhaAtiva)
-        {
             <div class="resenha-midia-section">
                 <div class="resenha-midia-divider"></div>
-
                 <p style="font-size:13px; font-weight:600; margin-bottom:6px;">
                     <i class="fa-solid fa-film"></i> Mídia do bloqueio
                 </p>
                 <p class="text-sm text-muted" style="margin-bottom:14px;">
                     Escolha um vídeo ou imagem para abrir automaticamente quando alguém tentar acessar um site bloqueado.
                 </p>
-
                 <div class="flex gap-2 items-center flex-wrap">
                     <label class="btn btn-ghost resenha-upload-label">
                         <i class="fa-solid fa-upload"></i>
@@ -224,34 +195,29 @@
                         <InputFile OnChange="OnMidiaSelected" accept="image/*,video/*"
                                    style="display:none;" />
                     </label>
-
                     @if (ThemeSvc.MidiaResenhaPath != null)
                     {
                         <span class="text-sm text-muted resenha-midia-filename">
                             <i class="fa-solid @(ThemeSvc.MidiaResenhaIsVideo ? "fa-film" : "fa-image")"></i>
                             @_midiaFileName
                         </span>
-
                         <button class="btn btn-ghost btn-icon" @onclick="LimparMidia" title="Remover">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     }
                 </div>
-
                 @if (_midiaUploading)
                 {
                     <p class="text-sm text-muted" style="margin-top:8px;">
                         <i class="fa-solid fa-spinner fa-spin"></i> Salvando...
                     </p>
                 }
-
                 @if (!string.IsNullOrEmpty(_midiaErro))
                 {
                     <p style="margin-top:8px; font-size:12px; color:var(--accent-coral);">
                         <i class="fa-solid fa-triangle-exclamation"></i> @_midiaErro
                     </p>
                 }
-
                 @if (ThemeSvc.MidiaResenhaPath != null && !_midiaUploading)
                 {
                     <p class="text-sm text-muted" style="margin-top:10px;">
@@ -260,7 +226,24 @@
                     </p>
                 }
             </div>
-        }
+        </div>
+    }
+
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:16px;"><i class="fa-solid fa-rocket"></i> Sistema</h2>
+        <div class="flex justify-between items-center">
+            <div>
+                <p style="font-size:14px; font-weight:500; color:var(--text-primary);">Iniciar com o Windows</p>
+                <p class="text-sm text-muted mt-1">O FocusVisk abre automaticamente quando o computador ligar.</p>
+            </div>
+            <label class="settings-toggle">
+                <input type="checkbox" checked="@_startupEnabled" @onchange="ToggleStartup" />
+                <span class="settings-toggle-track">
+                    <span class="settings-toggle-thumb"></span>
+                </span>
+            </label>
+        </div>
     </div>
 
     <div class="card">
@@ -275,6 +258,59 @@
         </p>
     </div>
 </div>
+
+@if (_showResenhaPopup)
+{
+    <div class="resenha-popup-overlay" @onclick="FecharPopup">
+        <div class="resenha-popup" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-size:16px; font-weight:700;">👀 Modo Resenha</h2>
+                <button class="btn btn-icon btn-ghost" @onclick="FecharPopup">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center mb-3">
+                <p class="text-sm text-muted">
+                    @(ThemeSvc.ResenhaAtiva ? "MODO RESENHA ATIVO" : "Averiguarás?")
+                </p>
+                <button class="btn resenha-toggle @(ThemeSvc.ResenhaAtiva ? "resenha-on" : "resenha-off")"
+                        @onclick="ToggleResenha">
+                    @if (ThemeSvc.ResenhaAtiva)
+                    {
+                        <span>👀 ON</span>
+                    }
+                    else
+                    {
+                        <span>💤 OFF</span>
+                    }
+                </button>
+            </div>
+
+            @if (_showResenhaConfirm)
+            {
+                <div class="resenha-confirm-box">
+                    <p style="font-size:14px; font-weight:600; margin-bottom:8px;">
+                        👀 Tem certeza que ativarás o modo resenha?
+                    </p>
+                    <p class="text-sm text-muted" style="margin-bottom:16px;">
+                        O sistema entrará na resenha. Não há como escapar após ativado.
+                    </p>
+                    <div class="flex gap-2">
+                        <button class="btn btn-primary" @onclick="ConfirmarResenha">Sim, ativar a resenha</button>
+                        <button class="btn btn-ghost" @onclick="CancelarResenha">Compensa não</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<button class="resenha-fab @(ThemeSvc.ResenhaAtiva ? "resenha-fab-ativa" : "")"
+        title="Modo Resenha"
+        @onclick="AbrirPopup">
+    <i class="fa-solid fa-eye"></i>
+</button>
 
 @code {
     private int _focusMin = 25;
@@ -294,6 +330,9 @@
     private bool _themeSaved;
 
     private bool _showResenhaConfirm = false;
+    private bool _showResenhaPopup = false;
+
+    private bool _startupEnabled;
 
     private string? _midiaFileName;
     private string? _midiaErro;
@@ -315,6 +354,25 @@
 
         if (ThemeSvc.MidiaResenhaPath != null)
             _midiaFileName = System.IO.Path.GetFileName(ThemeSvc.MidiaResenhaPath);
+
+        _startupEnabled = StartupSvc.IsStartupEnabled();
+    }
+
+    private void AbrirPopup()
+    {
+        _showResenhaPopup = true;
+    }
+
+    private void ToggleStartup(ChangeEventArgs e)
+    {
+        _startupEnabled = e.Value is true;
+        StartupSvc.SetEnabled(_startupEnabled);
+    }
+
+    private void FecharPopup()
+    {
+        _showResenhaPopup = false;
+        _showResenhaConfirm = false;
     }
 
     private async Task SavePomodoro()
@@ -396,6 +454,7 @@
     private async Task ConfirmarResenha()
     {
         _showResenhaConfirm = false;
+        _showResenhaPopup = false;
         ThemeSvc.SetResenha(true);
         StateHasChanged();
         await ThemeSvc.SetPresetAsync("light");
@@ -412,6 +471,7 @@
         ThemeSvc.SetResenha(false);
         _midiaFileName = null;
         _midiaErro = null;
+        _showResenhaPopup = false;
         StateHasChanged();
         await JS.InvokeVoidAsync("focusApp.desativarResenha");
         await ThemeSvc.SetPresetAsync("dark");

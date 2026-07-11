@@ -16,7 +16,6 @@ public partial class MainWindow : Window
         _alertService = alertService;
 
         Resources.Add("services", App.Services);
-        _alertService.SetTrayIcon(TrayIcon);
 
         _pomodoro.OnTick += (remaining, isRunning) =>
         {
@@ -56,9 +55,7 @@ public partial class MainWindow : Window
     private async void TrayNewTask_Click(object sender, RoutedEventArgs e)
     {
         ShowApp();
-
         await Task.Delay(300);
-
         await (BlazorView.WebView?.CoreWebView2?.ExecuteScriptAsync(
             "window.focusApp?.navigateTo('tasks')") ?? Task.FromResult(""));
     }
