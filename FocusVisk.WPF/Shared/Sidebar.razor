@@ -39,6 +39,11 @@
         <span class="nav-icon"><i class="fa-solid fa-note-sticky"></i></span> Notas
     </button>
 
+    <button class="nav-item @(CurrentPage == "habits" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("habits")'>
+        <span class="nav-icon"><i class="fa-solid fa-fire"></i></span> Hábitos
+    </button>
+
     <button class="nav-item @(CurrentPage == "financas" ? "active" : "")"
             @onclick='() => OnNavigate.InvokeAsync("financas")'>
         <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span> Finanças

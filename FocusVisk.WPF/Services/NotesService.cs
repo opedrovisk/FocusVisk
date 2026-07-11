@@ -22,6 +22,43 @@ public class NotesService
             .ToListAsync();
     }
 
+    public async Task<List<QuickNote>> GetByFolderAsync(string? folderName)
+    {
+        using var db = Db();
+        var query = db.QuickNotes.AsQueryable();
+
+        if (folderName == "__sem_pasta__")
+            query = query.Where(n => n.FolderName == null || n.FolderName == "");
+        else if (folderName != null)
+            query = query.Where(n => n.FolderName == folderName);
+
+        return await query
+            .OrderByDescending(n => n.IsPinned)
+            .ThenByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<QuickNote>> SearchByTitleAsync(string search)
+    {
+        using var db = Db();
+        var lower = search.ToLower();
+        return await db.QuickNotes
+            .Where(n => n.Title.ToLower().Contains(lower))
+            .OrderByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<string>> GetFoldersAsync()
+    {
+        using var db = Db();
+        return await db.QuickNotes
+            .Where(n => n.FolderName != null && n.FolderName != "")
+            .Select(n => n.FolderName!)
+            .Distinct()
+            .OrderBy(f => f)
+            .ToListAsync();
+    }
+
     public async Task SaveAsync(QuickNote note)
     {
         using var db = Db();
@@ -47,6 +84,24 @@ public class NotesService
         var note = await db.QuickNotes.FindAsync(id);
         if (note == null) return;
         note.IsPinned = !note.IsPinned;
+        await db.SaveChangesAsync();
+        OnChanged?.Invoke();
+    }
+
+    public async Task RenameFolderAsync(string oldName, string newName)
+    {
+        using var db = Db();
+        var notes = await db.QuickNotes.Where(n => n.FolderName == oldName).ToListAsync();
+        foreach (var n in notes) n.FolderName = newName;
+        await db.SaveChangesAsync();
+        OnChanged?.Invoke();
+    }
+
+    public async Task DeleteFolderAsync(string folderName)
+    {
+        using var db = Db();
+        var notes = await db.QuickNotes.Where(n => n.FolderName == folderName).ToListAsync();
+        foreach (var n in notes) n.FolderName = null;
         await db.SaveChangesAsync();
         OnChanged?.Invoke();
     }

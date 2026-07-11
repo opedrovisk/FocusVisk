@@ -25,6 +25,7 @@ public class QuickNote
     public string Title { get; set; } = "Nota sem título";
     public string Content { get; set; } = string.Empty;
     public bool IsPinned { get; set; }
+    public string? FolderName { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }
@@ -48,4 +49,23 @@ public class AppSettings
 
     public string? MidiaResenhaPath { get; set; }
     public bool MidiaResenhaIsVideo { get; set; }
+}
+
+public class Habit
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Icon { get; set; } = "fa-solid fa-star";
+    public string Color { get; set; } = "#7C6AF7";
+    public bool IsArchived { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public List<HabitLog> Logs { get; set; } = new();
+}
+
+public class HabitLog
+{
+    public int Id { get; set; }
+    public int HabitId { get; set; }
+    public Habit? Habit { get; set; }
+    public DateTime Date { get; set; }
 }

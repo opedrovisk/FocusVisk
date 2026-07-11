@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<AppSettings> Settings => Set<AppSettings>();
     public DbSet<FinancaTransaction> Transactions => Set<FinancaTransaction>();
     public DbSet<SavingGoal> SavingGoals => Set<SavingGoal>();
+    public DbSet<Habit> Habits => Set<Habit>();
+    public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +39,16 @@ public class AppDbContext : DbContext
             .WithOne(t => t.Parent)
             .HasForeignKey(t => t.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<HabitLog>()
+            .HasOne(l => l.Habit)
+            .WithMany(h => h.Logs)
+            .HasForeignKey(l => l.HabitId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<HabitLog>()
+            .HasIndex(l => new { l.HabitId, l.Date })
+            .IsUnique();
     }
 }
 
