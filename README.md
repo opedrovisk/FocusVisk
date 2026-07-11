@@ -205,3 +205,4 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - **EM DESENVOLVIMENTO, O PROJETO FOI IDEALIZADO PARA AUXILIAR NO MEU APRENDIZADO, AINDA RECEBERÁ NOVAS IMPLEMENTAÇÕES FUTURAMENTE.**
 
   
+test
