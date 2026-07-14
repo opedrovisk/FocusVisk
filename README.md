@@ -1,6 +1,6 @@
 # FocusVisk — Desktop
 
-Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 8)**, com foco em gestão de tarefas, hábitos, Pomodoro, calendário, notas rápidas, controle financeiro e bloqueio de sites distratores durante sessões de foco.
+Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 10)**, com foco em gestão de tarefas, hábitos, Pomodoro, calendário, notas rápidas, controle financeiro e bloqueio de sites distratores durante sessões de foco.
 
 > 🖥️ **Branch atual: `Desktop`** — versão nativa para Windows.
 > Uma branch `Web` está planejada e compartilhará as camadas `Core` e `Application` desta mesma solução.
