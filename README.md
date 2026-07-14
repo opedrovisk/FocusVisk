@@ -1,6 +1,6 @@
 # FocusVisk — Desktop
 
-Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 10)**, com foco em gestão de tarefas, hábitos, Pomodoro, calendário, notas rápidas, controle financeiro e bloqueio de sites distratores durante sessões de foco.
+Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 8)**, com foco em gestão de tarefas, hábitos, Pomodoro, calendário, notas rápidas, controle financeiro e bloqueio de sites distratores durante sessões de foco.
 
 > 🖥️ **Branch atual: `Desktop`** — versão nativa para Windows.
 > Uma branch `Web` está planejada e compartilhará as camadas `Core` e `Application` desta mesma solução.
@@ -43,7 +43,7 @@ As camadas `Core` e `Application` serão compartilhadas entre as duas versões, 
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Framework | .NET 10 (WPF) |
+| Framework | .NET 8 (WPF) |
 | UI | Blazor Hybrid (`Microsoft.AspNetCore.Components.WebView.Wpf`) |
 | ORM | Entity Framework Core 8 (Code First + Migrations) |
 | Banco de dados | SQL Server / LocalDB |
@@ -212,7 +212,7 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 ## Pré-requisitos
 
 - **Windows 10/11** (x64)
-- **.NET 10 SDK** — [download](https://dotnet.microsoft.com/download/dotnet/10)
+- **.NET 8 SDK** — [download](https://dotnet.microsoft.com/download/dotnet/8)
 - **Visual Studio 2022** (17.8+) com workload *ASP.NET and web development* e *Windows desktop development*
 - **SQL Server** ou **SQL Server Express LocalDB** (incluído com o Visual Studio)
 
