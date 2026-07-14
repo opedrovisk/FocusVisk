@@ -1,8 +1,8 @@
 using FocusVisk.Data;
+using FocusVisk.Native;
 using FocusVisk.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.IO;
 using System.Windows;
 
 namespace FocusVisk;
@@ -15,6 +15,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        ToastRegistration.Register();
+
         var services = new ServiceCollection();
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
@@ -23,11 +25,11 @@ public partial class App : Application
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
 
-        var mainWindow = Services.GetRequiredService<MainWindow>();
+        var taskSvc = Services.GetRequiredService<TaskService>();
+        _ = taskSvc.ResetRecurringTasksAsync();
 
-        bool startInBackground = e.Args.Contains("--background");
-        if (!startInBackground)
-            mainWindow.Show();
+        var mainWindow = Services.GetRequiredService<MainWindow>();
+        mainWindow.Show();
     }
 
     private static void ConfigureServices(ServiceCollection services)
@@ -46,7 +48,6 @@ public partial class App : Application
         services.AddSingleton<FinancasService>();
         services.AddSingleton<AlertService>();
         services.AddSingleton<HabitService>();
-        services.AddSingleton<StartupService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG

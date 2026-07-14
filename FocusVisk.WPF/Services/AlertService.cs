@@ -1,5 +1,6 @@
 ﻿using FocusVisk.Data;
 using FocusVisk.Models;
+using FocusVisk.Native;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Windows.UI.Notifications;
@@ -11,8 +12,6 @@ public class AlertService : IDisposable
     private readonly IServiceProvider _services;
     private readonly System.Threading.Timer _timer;
     private DateTime _lastCheck = DateTime.MinValue;
-
-    private const string AppId = "FocusVisk";
 
     public AlertService(IServiceProvider services)
     {
@@ -99,20 +98,20 @@ public class AlertService : IDisposable
                 ? $" ({RecurrenceLabel(task.RecurrenceType.Value)})"
                 : string.Empty;
 
-            var title = $"⏰ {task.Title}";
+            var title = $"⏰ triiiimm {task.Title}";
             var body = string.IsNullOrWhiteSpace(task.Description)
-                ? $"Hora de cuidar desta tarefa!{recLabel}"
+                ? $"Hora de realizar sua tarefa!{recLabel}"
                 : $"{task.Description}{recLabel}";
 
             var xml = $"""
-                <toast duration="short">
+                <toast duration="long">
                   <visual>
                     <binding template="ToastGeneric">
                       <text>{EscapeXml(title)}</text>
                       <text>{EscapeXml(body)}</text>
                     </binding>
                   </visual>
-                  <audio src="ms-winsoundevent:Notification.Default" />
+                  <audio src="ms-winsoundevent:Notification.Reminder" />
                 </toast>
                 """;
 
@@ -120,7 +119,7 @@ public class AlertService : IDisposable
             doc.LoadXml(xml);
 
             var toast = new ToastNotification(doc);
-            ToastNotificationManager.CreateToastNotifier(AppId).Show(toast);
+            ToastNotificationManager.CreateToastNotifier(ToastRegistration.AppId).Show(toast);
         }
         catch { }
     }

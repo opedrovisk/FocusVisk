@@ -137,10 +137,36 @@ public class TaskService
         await db.SaveChangesAsync();
         OnChanged?.Invoke();
     }
-
-    // Alias usado pelo TodoPage para tarefas principais
     public Task ToggleAsync(int id) => ToggleCompleteAsync(id);
-
-    // Alias usado pelo TodoPage para subtarefas (mesma lógica)
     public Task ToggleSubTaskAsync(int id) => ToggleCompleteAsync(id);
+
+    public async Task ResetRecurringTasksAsync()
+    {
+        using var db = Db();
+        var today = DateTime.Now.Date;
+
+        var recurringTasks = await db.Todos
+            .Where(t => t.IsRecurring && t.IsCompleted)
+            .ToListAsync();
+
+        var changed = false;
+
+        foreach (var task in recurringTasks)
+        {
+            if (task.CompletedAt.HasValue && task.CompletedAt.Value.Date == today)
+                continue;
+
+            if (AppearsOnDay(task, today))
+            {
+                task.IsCompleted = false;
+                task.CompletedAt = null;
+                changed = true;
+            }
+        }
+
+        if (changed)
+            await db.SaveChangesAsync();
+
+        OnChanged?.Invoke();
+    }
 }
