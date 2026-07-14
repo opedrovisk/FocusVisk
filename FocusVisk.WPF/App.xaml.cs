@@ -3,6 +3,7 @@ using FocusVisk.Native;
 using FocusVisk.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 using System.Windows;
 
 namespace FocusVisk;
@@ -29,7 +30,14 @@ public partial class App : Application
         _ = taskSvc.ResetRecurringTasksAsync();
 
         var mainWindow = Services.GetRequiredService<MainWindow>();
+
+        var startMinimized = e.Args.Contains("--background", StringComparer.OrdinalIgnoreCase);
+
         mainWindow.Show();
+        if (startMinimized)
+        {
+            mainWindow.WindowState = WindowState.Minimized;
+        }
     }
 
     private static void ConfigureServices(ServiceCollection services)
@@ -48,6 +56,7 @@ public partial class App : Application
         services.AddSingleton<FinancasService>();
         services.AddSingleton<AlertService>();
         services.AddSingleton<HabitService>();
+        services.AddSingleton<StartupService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG
