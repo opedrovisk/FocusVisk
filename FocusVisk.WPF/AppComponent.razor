@@ -2,6 +2,7 @@
 @using FocusVisk.Shared
 @inject ThemeService ThemeSvc
 @inject IJSRuntime JS
+@inject DiscordService DiscordSvc
 @implements IAsyncDisposable
 
 <div class="app-shell">
@@ -45,6 +46,24 @@
     private string _currentPage = "dashboard";
     private DotNetObjectReference<AppComponent>? _selfRef;
 
+    private static readonly Dictionary<string, (string Details, string State)> PagePresence = new()
+    {
+        ["dashboard"] = ("Organizando o dia", "Em Dashboards"),
+        ["tasks"] = ("Organizando as tarefas", "Em Tarefas"),
+        ["pomodoro"] = ("Focando em algo", "Em Pomodoro"),
+        ["calendar"] = ("Planejando a semana", "Em Calendário"),
+        ["notes"] = ("Registrando ideias", "Em Notas"),
+        ["financas"] = ("Organizando as finanças", "Em Finanças"),
+        ["habits"] = ("Organizando os hábitos", "Em Hábitos"),
+        ["settings"] = ("Ajustando o sistema", "Em Configurações")
+    };
+
+    private void UpdateDiscordPresence(string page)
+    {
+        var info = PagePresence.TryGetValue(page, out var value) ? value : PagePresence["dashboard"];
+        DiscordSvc.UpdatePresence(info.Details, info.State);
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await ThemeSvc.LoadAsync();
@@ -62,6 +81,8 @@
         _selfRef?.Dispose();
         _selfRef = DotNetObjectReference.Create(this);
         await SafeJs("focusApp.registerNavigationHandler", _selfRef);
+
+        UpdateDiscordPresence(_currentPage);
     }
 
     private async void OnThemeChangedHandler()
@@ -118,6 +139,7 @@
     private void NavigateTo(string page)
     {
         _currentPage = page;
+        UpdateDiscordPresence(page);
         StateHasChanged();
     }
 
@@ -125,6 +147,7 @@
     public void NavigateFromJs(string page)
     {
         _currentPage = page;
+        UpdateDiscordPresence(page);
         InvokeAsync(StateHasChanged);
     }
 

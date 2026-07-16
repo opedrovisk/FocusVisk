@@ -29,6 +29,9 @@ public partial class App : Application
         var taskSvc = Services.GetRequiredService<TaskService>();
         _ = taskSvc.ResetRecurringTasksAsync();
 
+        var discordSvc = Services.GetRequiredService<DiscordService>();
+        discordSvc.Initialize();
+
         var mainWindow = Services.GetRequiredService<MainWindow>();
 
         var startMinimized = e.Args.Contains("--background", StringComparer.OrdinalIgnoreCase);
@@ -57,6 +60,7 @@ public partial class App : Application
         services.AddSingleton<AlertService>();
         services.AddSingleton<HabitService>();
         services.AddSingleton<StartupService>();
+        services.AddSingleton<DiscordService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG
