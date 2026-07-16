@@ -19,6 +19,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.100" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
