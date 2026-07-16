@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
-
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
@@ -11,6 +10,12 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<PlatformTarget>x64</PlatformTarget>
 		<ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+		<SatelliteResourceLanguages>pt-BR;en</SatelliteResourceLanguages>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -44,5 +49,4 @@
 	<ItemGroup>
 		<Folder Include="Themes\" />
 	</ItemGroup>
-
 </Project>
