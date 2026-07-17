@@ -61,6 +61,10 @@ public partial class App : Application
         services.AddSingleton<HabitService>();
         services.AddSingleton<StartupService>();
         services.AddSingleton<DiscordService>();
+        services.AddSingleton<SearchService>();
+        services.AddSingleton<DataExportService>();
+        services.AddSingleton<ShortcutService>();
+        services.AddSingleton<TagService>();
 
         services.AddWpfBlazorWebView();
 #if DEBUG

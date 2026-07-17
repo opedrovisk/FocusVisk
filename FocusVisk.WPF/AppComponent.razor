@@ -1,8 +1,12 @@
 @using FocusVisk.Pages
 @using FocusVisk.Shared
+@using FocusVisk.Models
 @inject ThemeService ThemeSvc
-@inject IJSRuntime JS
+@inject SearchService SearchSvc
 @inject DiscordService DiscordSvc
+@inject PomodoroService Pomodoro
+@inject ShortcutService ShortcutSvc
+@inject IJSRuntime JS
 @implements IAsyncDisposable
 
 <div class="app-shell">
@@ -42,9 +46,59 @@
     </main>
 </div>
 
+@if (_showGlobalSearch)
+{
+    <div class="global-search-overlay" @onclick="CloseGlobalSearch">
+        <div class="global-search-box" @onclick:stopPropagation="true">
+            <div class="global-search-input-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input id="global-search-input" class="global-search-input" placeholder="Buscar tarefas, notas e hábitos..." value="@_searchQuery" @oninput="OnSearchInput" @onkeydown="OnSearchKeyDown" autocomplete="off" />
+                <span class="global-search-esc">ESC</span>
+            </div>
+            @if (_searchResults.Count > 0)
+            {
+                <div class="global-search-results">
+                    @{
+                        var indexed = _searchResults.Select((r, i) => (Result: r, Index: i)).ToList();
+                        var groups = indexed.GroupBy(x => x.Result.Type);
+                    }
+                    @foreach (var group in groups)
+                    {
+                        <div class="global-search-group-label">@GetGroupLabel(group.Key)</div>
+                        @foreach (var item in group)
+                        {
+                            <div class="global-search-item @(item.Index == _selectedIndex ? "selected" : "")" @onclick="() => SelectSearchResult(item.Result)" @onmouseenter="() => _selectedIndex = item.Index">
+                                <i class="@item.Result.Icon"></i>
+                                <div class="global-search-item-text">
+                                    <span class="global-search-item-title">@item.Result.Title</span>
+                                    <span class="global-search-item-subtitle">@item.Result.Subtitle</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                <div class="global-search-empty">Nenhum resultado encontrado</div>
+            }
+            else
+            {
+                <div class="global-search-hint">Digite para buscar em tarefas, notas e hábitos</div>
+            }
+        </div>
+    </div>
+}
+
 @code {
     private string _currentPage = "dashboard";
     private DotNetObjectReference<AppComponent>? _selfRef;
+
+    private bool _showGlobalSearch = false;
+    private string _searchQuery = "";
+    private List<SearchResult> _searchResults = new();
+    private int _selectedIndex = 0;
+    private CancellationTokenSource? _searchDebounce;
 
     private static readonly Dictionary<string, (string Details, string State)> PagePresence = new()
     {
@@ -149,6 +203,122 @@
         _currentPage = page;
         UpdateDiscordPresence(page);
         InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void RequestNewTaskShortcut()
+    {
+        if (_currentPage != "tasks")
+        {
+            _currentPage = "tasks";
+            UpdateDiscordPresence("tasks");
+        }
+        ShortcutSvc.RequestNewTask();
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void TogglePomodoroShortcut()
+    {
+        if (Pomodoro.IsRunning)
+        {
+            Pomodoro.Pause();
+        }
+        else
+        {
+            Pomodoro.Start();
+        }
+        _currentPage = "pomodoro";
+        UpdateDiscordPresence("pomodoro");
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task ToggleGlobalSearch()
+    {
+        _showGlobalSearch = !_showGlobalSearch;
+        if (_showGlobalSearch)
+        {
+            _searchQuery = "";
+            _searchResults = new();
+            _selectedIndex = 0;
+        }
+        await InvokeAsync(StateHasChanged);
+        if (_showGlobalSearch)
+        {
+            await Task.Delay(50);
+            await SafeJs("focusApp.focusElement", "global-search-input");
+        }
+    }
+
+    private void CloseGlobalSearch()
+    {
+        _showGlobalSearch = false;
+    }
+
+    private string GetGroupLabel(SearchResultType type)
+    {
+        return type switch
+        {
+            SearchResultType.Task => "Tarefas",
+            SearchResultType.Note => "Notas",
+            SearchResultType.Habit => "Hábitos",
+            _ => ""
+        };
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchQuery = e.Value?.ToString() ?? "";
+        _selectedIndex = 0;
+        _searchDebounce?.Cancel();
+        _searchDebounce = new CancellationTokenSource();
+        var token = _searchDebounce.Token;
+        try
+        {
+            await Task.Delay(200, token);
+            if (!token.IsCancellationRequested)
+            {
+                _searchResults = await SearchSvc.SearchAsync(_searchQuery);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _showGlobalSearch = false;
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            if (_searchResults.Count > 0)
+                _selectedIndex = (_selectedIndex + 1) % _searchResults.Count;
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            if (_searchResults.Count > 0)
+                _selectedIndex = (_selectedIndex - 1 + _searchResults.Count) % _searchResults.Count;
+        }
+        else if (e.Key == "Enter")
+        {
+            if (_searchResults.Count > 0 && _selectedIndex >= 0 && _selectedIndex < _searchResults.Count)
+            {
+                await SelectSearchResult(_searchResults[_selectedIndex]);
+                return;
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectSearchResult(SearchResult result)
+    {
+        _showGlobalSearch = false;
+        _currentPage = result.PageTarget;
+        UpdateDiscordPresence(result.PageTarget);
+        await InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync()

@@ -26,6 +26,7 @@ public class QuickNote
     public string Content { get; set; } = string.Empty;
     public bool IsPinned { get; set; }
     public string? FolderName { get; set; }
+    public string? Tag { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }
@@ -59,6 +60,7 @@ public class Habit
     public string Color { get; set; } = "#7C6AF7";
     public bool IsArchived { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? LastStreakAlertAt { get; set; }
     public List<HabitLog> Logs { get; set; } = new();
 }
 

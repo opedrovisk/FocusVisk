@@ -4,6 +4,7 @@
 @inject ThemeService ThemeSvc
 @inject IJSRuntime JS
 @inject FocusVisk.Services.StartupService StartupSvc
+@inject DataExportService DataExportSvc
 
 <div class="page-header">
     <h1 class="page-title">Configurações</h1>
@@ -247,6 +248,46 @@
     </div>
 
     <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:16px;"><i class="fa-solid fa-database"></i> Dados</h2>
+        <div class="flex justify-between items-center">
+            <div>
+                <p style="font-size:14px; font-weight:500; color:var(--text-primary);">Exportar dados</p>
+                <p class="text-sm text-muted mt-1">Baixe todas as suas tarefas, notas, hábitos e finanças em um arquivo JSON.</p>
+            </div>
+            <button class="btn btn-ghost" style="min-width:130px; justify-content:center;" @onclick="ExportData" disabled="@_exportBusy">
+                @if (_exportBusy)
+                {
+                    <span>Exportando...</span>
+                }
+                else
+                {
+                    <span><i class="fa-solid fa-download"></i> Exportar</span>
+                }
+            </button>
+        </div>
+        <div class="flex justify-between items-center mt-4" style="padding-top:16px; border-top:1px solid var(--border);">
+            <div>
+                <p style="font-size:14px; font-weight:500; color:var(--text-primary);">Importar dados</p>
+                <p class="text-sm text-muted mt-1">Substitui todos os dados atuais pelos dados de um arquivo JSON exportado anteriormente.</p>
+            </div>
+            <button class="btn btn-ghost" style="min-width:130px; justify-content:center;" @onclick="ImportData" disabled="@_importBusy">
+                @if (_importBusy)
+                {
+                    <span>Importando...</span>
+                }
+                else
+                {
+                    <span><i class="fa-solid fa-upload"></i> Importar</span>
+                }
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(_dataStatusMsg))
+        {
+            <p class="text-sm mt-3" style="color: @(_dataStatusIsError ? "var(--accent-coral)" : "var(--accent-green)");">@_dataStatusMsg</p>
+        }
+    </div>
+
+    <div class="card">
         <h2 style="font-size:15px; font-weight:600; margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> Sobre o FocusVisk</h2>
         <p class="text-sm text-muted">Versão 1.0.0</p>
         <p class="text-sm text-muted">.NET 8 · Blazor Hybrid · WPF · SQL Server</p>
@@ -337,6 +378,11 @@
     private string? _midiaFileName;
     private string? _midiaErro;
     private bool _midiaUploading = false;
+
+    private bool _exportBusy;
+    private bool _importBusy;
+    private string? _dataStatusMsg;
+    private bool _dataStatusIsError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -545,5 +591,80 @@
         _midiaFileName = null;
         _midiaErro = null;
         StateHasChanged();
+    }
+
+    private async Task ExportData()
+    {
+        _exportBusy = true;
+        _dataStatusMsg = null;
+        StateHasChanged();
+
+        try
+        {
+            var json = await DataExportSvc.ExportAsync();
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = $"focusvisk-backup-{DateTime.Now:yyyy-MM-dd}.json",
+                Filter = "Arquivo JSON (*.json)|*.json"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                await System.IO.File.WriteAllTextAsync(dialog.FileName, json);
+                _dataStatusMsg = "Dados exportados com sucesso.";
+                _dataStatusIsError = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _dataStatusMsg = $"Erro ao exportar: {ex.Message}";
+            _dataStatusIsError = true;
+        }
+        finally
+        {
+            _exportBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ImportData()
+    {
+        var confirm = System.Windows.MessageBox.Show(
+            "Isso vai substituir todos os seus dados atuais pelos dados do arquivo importado. Essa ação não pode ser desfeita. Deseja continuar?",
+            "Importar dados",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Arquivo JSON (*.json)|*.json"
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        _importBusy = true;
+        _dataStatusMsg = null;
+        StateHasChanged();
+
+        try
+        {
+            var json = await System.IO.File.ReadAllTextAsync(dialog.FileName);
+            await DataExportSvc.ImportAsync(json);
+            _dataStatusMsg = "Dados importados com sucesso. Reinicie o FocusVisk para ver as mudanças em todas as telas.";
+            _dataStatusIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _dataStatusMsg = $"Erro ao importar: {ex.Message}";
+            _dataStatusIsError = true;
+        }
+        finally
+        {
+            _importBusy = false;
+            StateHasChanged();
+        }
     }
 }

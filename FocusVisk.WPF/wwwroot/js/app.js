@@ -11,6 +11,38 @@ window.focusApp = {
                 window.focusApp._dotNetRef.invokeMethodAsync('NavigateFromJs', page);
             }
         });
+
+        if (!window.focusApp._globalSearchBound) {
+            window.focusApp._globalSearchBound = true;
+            document.addEventListener('keydown', function (e) {
+                const key = e.key.toLowerCase();
+                const ctrlOrCmd = e.ctrlKey || e.metaKey;
+
+                if (ctrlOrCmd && key === 'k') {
+                    e.preventDefault();
+                    if (window.focusApp._dotNetRef) {
+                        window.focusApp._dotNetRef.invokeMethodAsync('ToggleGlobalSearch');
+                    }
+                    return;
+                }
+
+                if (ctrlOrCmd && !e.shiftKey && key === 'n') {
+                    e.preventDefault();
+                    if (window.focusApp._dotNetRef) {
+                        window.focusApp._dotNetRef.invokeMethodAsync('RequestNewTaskShortcut');
+                    }
+                    return;
+                }
+
+                if (ctrlOrCmd && e.shiftKey && key === 'p') {
+                    e.preventDefault();
+                    if (window.focusApp._dotNetRef) {
+                        window.focusApp._dotNetRef.invokeMethodAsync('TogglePomodoroShortcut');
+                    }
+                    return;
+                }
+            });
+        }
     },
 
     navigateTo: function (page) {
@@ -226,6 +258,9 @@ window.focusApp = {
                 }
             });
         }
+
+
+
     }
 
 };
