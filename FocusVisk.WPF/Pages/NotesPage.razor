@@ -1,4 +1,5 @@
 @inject NotesService NotesSvc
+@inject TagService TagSvc
 @implements IDisposable
 
 <div class="notes-layout @(_sidebarOpen ? "sidebar-open" : "sidebar-closed")">
@@ -129,6 +130,22 @@
             </div>
         </div>
 
+        @if (_availableTags.Count > 0)
+        {
+            <div class="flex gap-2 items-center mb-3" style="flex-wrap: wrap;">
+                <button class="badge @(_activeTag == null ? "badge-purple" : "badge-ghost")" style="cursor:pointer; border:none;" @onclick="() => SelectTag(null)">
+                    Todas as tags
+                </button>
+                @foreach (var tag in _availableTags)
+                {
+                    var t = tag;
+                    <button class="badge @(_activeTag == t ? TagService.TagBadgeClass(t) : "badge-ghost")" style="cursor:pointer; border:none;" @onclick="() => SelectTag(t)">
+                        @t
+                    </button>
+                }
+            </div>
+        }
+
         @if (_editing != null)
         {
             <div class="card mb-4">
@@ -142,9 +159,27 @@
                             <option value="@f">@f</option>
                         }
                     </select>
+                    <input class="input" placeholder="Tag..." style="max-width:140px;" @bind="_editing.Tag" />
                 </div>
-                <textarea class="textarea" placeholder="Escreva aqui..."
-                          @bind="_editing.Content" style="min-height:180px;"></textarea>
+                <div class="flex gap-2 mb-3">
+                    <button class="btn @(!_previewMode ? "btn-primary" : "btn-ghost")" style="font-size:12px; padding:5px 10px;" @onclick="() => _previewMode = false">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn @(_previewMode ? "btn-primary" : "btn-ghost")" style="font-size:12px; padding:5px 10px;" @onclick="() => _previewMode = true">
+                        <i class="fa-brands fa-markdown"></i> Visualizar
+                    </button>
+                </div>
+                @if (_previewMode)
+                {
+                    <div class="markdown-body" style="min-height:180px;">
+                        @((MarkupString)MarkdownRenderer.ToHtml(_editing.Content))
+                    </div>
+                }
+                else
+                {
+                    <textarea class="textarea" placeholder="Escreva aqui... (suporta Markdown: **negrito**, *itálico*, listas, código...)"
+                              @bind="_editing.Content" style="min-height:180px;"></textarea>
+                }
                 <div class="flex gap-2 mt-3">
                     <button class="btn btn-primary" @onclick="SaveNote">Salvar</button>
                     <button class="btn btn-ghost" @onclick="() => _editing = null">Cancelar</button>
@@ -195,6 +230,10 @@
                             {
                                 <span class="notes-folder-chip"><i class="fa-solid fa-folder"></i> @n.FolderName</span>
                             }
+                            @if (!string.IsNullOrEmpty(n.Tag))
+                            {
+                                <span class="badge @TagService.TagBadgeClass(n.Tag)" style="margin-left:6px;">@n.Tag</span>
+                            }
                             <p class="note-card-preview">@n.Content</p>
                             <p class="text-sm text-muted mt-2">@n.UpdatedAt.ToString("dd/MM HH:mm")</p>
                         </div>
@@ -224,6 +263,10 @@
                             {
                                 <span class="notes-folder-chip"><i class="fa-solid fa-folder"></i> @n.FolderName</span>
                             }
+                            @if (!string.IsNullOrEmpty(n.Tag))
+                            {
+                                <span class="badge @TagService.TagBadgeClass(n.Tag)" style="margin-left:6px;">@n.Tag</span>
+                            }
                             <p class="note-card-preview">@n.Content</p>
                             <p class="text-sm text-muted mt-2">@n.UpdatedAt.ToString("dd/MM HH:mm")</p>
                         </div>
@@ -248,6 +291,9 @@
     private string? _renamingFolder;
     private string _renameFolderValue = string.Empty;
     private bool _sidebarOpen = false;
+    private List<string> _availableTags = new();
+    private string? _activeTag;
+    private bool _previewMode = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -265,6 +311,7 @@
     {
         _allNotes = await NotesSvc.GetAllAsync();
         _folders = await NotesSvc.GetFoldersAsync();
+        _availableTags = await TagSvc.GetAllTagsAsync();
         ApplyFilter();
     }
 
@@ -277,6 +324,9 @@
         else if (_activeFolder != null)
             source = source.Where(n => n.FolderName == _activeFolder);
 
+        if (_activeTag != null)
+            source = source.Where(n => string.Equals(n.Tag, _activeTag, StringComparison.OrdinalIgnoreCase));
+
         if (!string.IsNullOrWhiteSpace(_searchTerm))
             source = source.Where(n => n.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
 
@@ -284,6 +334,12 @@
             .OrderByDescending(n => n.IsPinned)
             .ThenByDescending(n => n.UpdatedAt)
             .ToList();
+    }
+
+    private void SelectTag(string? tag)
+    {
+        _activeTag = tag;
+        ApplyFilter();
     }
 
     private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
@@ -306,25 +362,37 @@
         ApplyFilter();
     }
 
-    private void NewNote() => _editing = new QuickNote
+    private void NewNote()
     {
-        Title = "Nova nota",
-        FolderName = _activeFolder is null or SemPasta ? null : _activeFolder
-    };
+        _editing = new QuickNote
+        {
+            Title = "Nova nota",
+            FolderName = _activeFolder is null or SemPasta ? null : _activeFolder,
+            Tag = _activeTag
+        };
+        _previewMode = false;
+    }
 
-    private void EditNote(QuickNote note) => _editing = new QuickNote
+    private void EditNote(QuickNote note)
     {
-        Id = note.Id,
-        Title = note.Title,
-        Content = note.Content,
-        IsPinned = note.IsPinned,
-        FolderName = note.FolderName
-    };
+        _editing = new QuickNote
+        {
+            Id = note.Id,
+            Title = note.Title,
+            Content = note.Content,
+            IsPinned = note.IsPinned,
+            FolderName = note.FolderName,
+            Tag = note.Tag
+        };
+        _previewMode = false;
+    }
 
     private async Task SaveNote()
     {
         if (_editing == null) return;
         if (string.IsNullOrWhiteSpace(_editing.FolderName)) _editing.FolderName = null;
+        if (string.IsNullOrWhiteSpace(_editing.Tag)) _editing.Tag = null;
+        else _editing.Tag = _editing.Tag.Trim();
         await NotesSvc.SaveAsync(_editing);
         _editing = null;
     }

@@ -94,9 +94,11 @@ public class HabitService
         return habit.Logs.Any(l => l.Date.Date == date.Date);
     }
 
-    public int GetStreak(Habit habit)
+    public int GetStreak(Habit habit) => ComputeStreak(habit, DateTime.Today);
+
+    public static int ComputeStreak(Habit habit, DateTime referenceDate)
     {
-        var today = DateTime.Today;
+        var today = referenceDate.Date;
         var logDates = habit.Logs.Select(l => l.Date.Date).ToHashSet();
 
         if (!logDates.Contains(today) && !logDates.Contains(today.AddDays(-1)))

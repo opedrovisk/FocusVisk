@@ -1,4 +1,5 @@
 @inject TaskService TaskSvc
+@inject ShortcutService ShortcutSvc
 @implements IDisposable
 
 <div class="page-header flex justify-between items-center">
@@ -155,7 +156,7 @@ else
                 }
                 @if (!string.IsNullOrEmpty(it.Tag))
                 {
-                    <span class="badge badge-purple">@it.Tag</span>
+                    <span class="badge @TagService.TagBadgeClass(it.Tag)">@it.Tag</span>
                 }
                 <span class="badge @GetPriorityBadge(it.Priority)">@GetPriorityLabel(it.Priority)</span>
                 @if (it.DueDate.HasValue)
@@ -258,7 +259,22 @@ else
     protected override async Task OnInitializedAsync()
     {
         TaskSvc.OnChanged += HandleChanged;
+        ShortcutSvc.OnNewTaskRequested += HandleNewTaskShortcut;
         await LoadAsync();
+        if (ShortcutSvc.ConsumePendingNewTask())
+        {
+            OpenNewTask();
+        }
+    }
+
+    private void HandleNewTaskShortcut()
+    {
+        ShortcutSvc.ConsumePendingNewTask();
+        InvokeAsync(() =>
+        {
+            OpenNewTask();
+            StateHasChanged();
+        });
     }
 
     private async void HandleChanged()
@@ -405,5 +421,9 @@ else
         _ => "Recorrente"
     };
 
-    public void Dispose() => TaskSvc.OnChanged -= HandleChanged;
+    public void Dispose()
+    {
+        TaskSvc.OnChanged -= HandleChanged;
+        ShortcutSvc.OnNewTaskRequested -= HandleNewTaskShortcut;
+    }
 }

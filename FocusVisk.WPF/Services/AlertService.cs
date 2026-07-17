@@ -43,7 +43,7 @@ public class AlertService : IDisposable
             {
                 if (!ShouldFireAlert(task, now)) continue;
 
-                FireToast(task);
+                FireTaskToast(task);
 
                 task.LastAlertFiredAt = now;
 
@@ -53,9 +53,36 @@ public class AlertService : IDisposable
                 db.Todos.Update(task);
             }
 
+            await CheckHabitStreaksAsync(db, now);
+
             await db.SaveChangesAsync();
         }
         catch { }
+    }
+
+    private async Task CheckHabitStreaksAsync(AppDbContext db, DateTime now)
+    {
+        var hoursLeftToday = (now.Date.AddDays(1) - now).TotalHours;
+        if (hoursLeftToday > 3) return;
+
+        var cutoff = now.Date.AddDays(-34);
+        var habits = await db.Habits
+            .Where(h => !h.IsArchived)
+            .Include(h => h.Logs.Where(l => l.Date >= cutoff))
+            .ToListAsync();
+
+        foreach (var habit in habits)
+        {
+            if (habit.Logs.Any(l => l.Date.Date == now.Date)) continue;
+            if (habit.LastStreakAlertAt.HasValue && habit.LastStreakAlertAt.Value.Date == now.Date) continue;
+
+            var streak = HabitService.ComputeStreak(habit, now.Date);
+            if (streak < 3) continue;
+
+            FireStreakToast(habit, streak, now.Date.AddDays(1) - now);
+            habit.LastStreakAlertAt = now;
+            db.Habits.Update(habit);
+        }
     }
 
     private static bool ShouldFireAlert(TodoItem task, DateTime now)
@@ -90,19 +117,38 @@ public class AlertService : IDisposable
         };
     }
 
-    private static void FireToast(TodoItem task)
+    private static void FireTaskToast(TodoItem task)
+    {
+        var recLabel = task.IsRecurring && task.RecurrenceType.HasValue
+            ? $" ({RecurrenceLabel(task.RecurrenceType.Value)})"
+            : string.Empty;
+
+        var title = $"⏰ triiiimm {task.Title}";
+        var body = string.IsNullOrWhiteSpace(task.Description)
+            ? $"Hora de realizar sua tarefa!{recLabel}"
+            : $"{task.Description}{recLabel}";
+
+        FireGenericToast(title, body);
+    }
+
+    private static void FireStreakToast(Habit habit, int streak, TimeSpan timeLeft)
+    {
+        var hours = (int)timeLeft.TotalHours;
+        var minutes = timeLeft.Minutes;
+        var timeLabel = hours > 0
+            ? $"{hours}h{(minutes > 0 ? $"{minutes}min" : "")}"
+            : $"{minutes}min";
+
+        var title = $"🔥 Streak de {habit.Name} em risco";
+        var body = $"Seu streak de {streak} dia(s) quebra em {timeLabel} se você não marcar hoje.";
+
+        FireGenericToast(title, body);
+    }
+
+    private static void FireGenericToast(string title, string body)
     {
         try
         {
-            var recLabel = task.IsRecurring && task.RecurrenceType.HasValue
-                ? $" ({RecurrenceLabel(task.RecurrenceType.Value)})"
-                : string.Empty;
-
-            var title = $"⏰ triiiimm {task.Title}";
-            var body = string.IsNullOrWhiteSpace(task.Description)
-                ? $"Hora de realizar sua tarefa!{recLabel}"
-                : $"{task.Description}{recLabel}";
-
             var xml = $"""
                 <toast duration="long">
                   <visual>
