@@ -1,8 +1,10 @@
 # FocusVisk — Desktop
 
-Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 8)**, com foco em gestão de tarefas, hábitos, Pomodoro, calendário, notas rápidas, controle financeiro e bloqueio de sites distratores durante sessões de foco.
+[![Release](https://img.shields.io/github/v/release/opedrovisk/FocusVisk?style=for-the-badge&color=7C6AF7&labelColor=16161E)](https://github.com/opedrovisk/FocusVisk/releases)
 
-> 🖥️ **Branch atual: `Desktop`** — versão nativa para Windows.
+Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor Hybrid (.NET 8)**, com foco em gestão de tarefas, hábitos, Pomodoro, calendário, notas rápidas, busca global, controle financeiro e bloqueio de sites distratores durante sessões de foco.
+
+> 🖥️ **Branch atual: `Desktop`** — versão nativa para Windows, com a **v1.0** já lançada.
 > Uma branch `Web` está planejada e compartilhará as camadas `Core` e `Application` desta mesma solução.
 
 ---
@@ -22,9 +24,9 @@ Aplicação **desktop** de produtividade pessoal desenvolvida com **WPF + Blazor
 
 ## Apresentação
 
-O **FocusVisk** é uma ferramenta de produtividade pessoal para Windows que centraliza tudo o que o usuário precisa para manter o foco: um timer Pomodoro com bloqueio automático de sites, gerenciamento de tarefas com prioridades, subtarefas e recorrência, um rastreador de hábitos com streaks, calendário com anotações, notas rápidas fixáveis, controle financeiro com metas de economia e um dashboard com estatísticas de desempenho da semana.
+O **FocusVisk** é uma ferramenta de produtividade pessoal para Windows que centraliza tudo o que o usuário precisa para manter o foco: um timer Pomodoro com bloqueio automático de sites, gerenciamento de tarefas com prioridades, subtarefas, tags e recorrência, um rastreador de hábitos com streaks, calendário com anotações, notas rápidas em Markdown organizadas por pastas, controle financeiro com metas de economia, busca global e um dashboard com estatísticas de desempenho da semana.
 
-A interface é construída em **Blazor Hybrid** renderizada dentro de um `WebView2` no WPF, o que permite um front-end web moderno (HTML/CSS) rodando como aplicação nativa sem depender de navegador externo. A aplicação também roda minimizada na bandeja do sistema, com notificações nativas do Windows para lembretes de tarefas agendadas.
+A interface é construída em **Blazor Hybrid** renderizada dentro de um `WebView2` no WPF, o que permite um front-end web moderno (HTML/CSS) rodando como aplicação nativa sem depender de navegador externo. A aplicação também roda minimizada na bandeja do sistema, com notificações nativas do Windows para lembretes de tarefas agendadas e presença rica (Rich Presence) no Discord.
 
 ---
 
@@ -32,7 +34,7 @@ A interface é construída em **Blazor Hybrid** renderizada dentro de um `WebVie
 
 | Branch | Plataforma | Status | Stack principal |
 |--------|------------|--------|-----------------|
-| `Desktop` | Windows (WPF) | ✅ Em desenvolvimento | WPF + Blazor Hybrid + SQL Server |
+| `Desktop` | Windows (WPF) | ✅ v1.0 lançada — sujeita a novas implementações | WPF + Blazor Hybrid + SQL Server |
 | `Web` *(planejado)* | Navegador | 🔜 Futuro | ASP.NET Core MVC + Razor + Vue.js 3 |
 
 As camadas `Core` e `Application` serão compartilhadas entre as duas versões, garantindo que a lógica de negócio não seja duplicada.
@@ -52,6 +54,8 @@ As camadas `Core` e `Application` serão compartilhadas entre as duas versões, 
 | MVVM | CommunityToolkit.Mvvm |
 | Ícones | Font Awesome 6 (local, offline) |
 | Gráficos | Chart.js (linha e rosca na aba Finanças) |
+| Markdown | Markdig (renderização das notas rápidas) |
+| Discord Rich Presence | DiscordRPC |
 | Arquitetura | Layered (Core · Application · Infrastructure · WPF) |
 
 ---
@@ -73,9 +77,10 @@ FocusVisk/
     ├── Data/
     │   └── AppDbContext.cs        # DbContext (EF Core) + factory de design-time; seed de AppSettings
     ├── Models/
-    │   ├── AppModels.cs           # CalendarNote, PomodoroSession, QuickNote, AppSettings, Habit, HabitLog
+    │   ├── AppModels.cs           # CalendarNote, PomodoroSession, QuickNote (pasta e tag), AppSettings, Habit, HabitLog
     │   ├── FinanceTransaction.cs  # FinancaTransaction, SavingGoal e enums de tipo/categoria
-    │   └── TodoItem.cs            # Tarefa com Priority, recorrência, subtarefas e horário agendado
+    │   ├── SearchResult.cs        # Resultado unificado da busca global (tarefa, nota ou hábito)
+    │   └── TodoItem.cs            # Tarefa com Priority, tag, recorrência, subtarefas e horário agendado
     ├── Native/
     │   └── ToastRegistration.cs   # Registro do AppUserModelID para notificações nativas do Windows
     ├── Pages/
@@ -91,14 +96,20 @@ FocusVisk/
     │   ├── TaskService.cs         # CRUD de tarefas, subtarefas, recorrência e reset diário
     │   ├── PomodoroService.cs     # Timer com fases e persistência de sessões
     │   ├── CalendarService.cs     # CRUD de anotações de calendário
-    │   ├── NotesService.cs        # CRUD de notas rápidas
+    │   ├── NotesService.cs        # CRUD de notas rápidas (pastas e tags)
     │   ├── HabitService.cs        # CRUD de hábitos, logs diários e cálculo de streak
     │   ├── FinancasService.cs     # CRUD de transações e metas de economia
     │   ├── FocusBlockerService.cs # Bloqueio de sites via arquivo hosts do Windows
     │   ├── AlertService.cs        # Verificação periódica e disparo de notificações de tarefas agendadas
     │   ├── StartupService.cs      # Ativa/desativa inicialização automática com o Windows
     │   ├── StatsService.cs        # Estatísticas e streak do dashboard
-    │   └── ThemeService.cs        # Persistência e aplicação de tema/cores
+    │   ├── ThemeService.cs        # Persistência e aplicação de tema/cores
+    │   ├── SearchService.cs       # Busca global unificada em tarefas, notas e hábitos
+    │   ├── TagService.cs          # Agregação de tags usadas em tarefas e notas, com paleta de cores
+    │   ├── ShortcutService.cs     # Ponte entre atalhos de teclado globais e os componentes Blazor
+    │   ├── MarkdownRenderer.cs    # Conversão do conteúdo Markdown das notas para HTML
+    │   ├── DataExportService.cs   # Exportação/importação de todos os dados em backup JSON
+    │   └── DiscordService.cs      # Presença rica (Rich Presence) do FocusVisk no Discord
     ├── Shared/
     │   └── Sidebar.razor          # Navegação lateral
     ├── wwwroot/
@@ -147,6 +158,24 @@ Agrega estatísticas para o dashboard: sessões do dia, sessões da semana, tare
 ### `ThemeService`
 Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de destaque, cores de fundo). Gera as variáveis CSS dinâmicas injetadas na aplicação Blazor via `BuildCssVariables()`.
 
+### `SearchService`
+Busca global unificada: consulta tarefas, notas e hábitos por título/descrição e retorna resultados combinados (`SearchResult`) já ordenados e prontos para exibição na paleta de busca (`Ctrl+K`).
+
+### `TagService`
+Agrega as tags cadastradas em tarefas e notas, sem duplicatas, e atribui uma cor consistente a cada tag a partir de uma paleta fixa de badges.
+
+### `ShortcutService`
+Faz a ponte entre os atalhos de teclado globais capturados no JS host e os componentes Blazor, expondo o evento `OnNewTaskRequested` para abrir a criação de tarefa a partir do atalho `Ctrl+N`.
+
+### `MarkdownRenderer`
+Converte o conteúdo Markdown das notas rápidas em HTML (via Markdig) para a pré-visualização exibida na aba Notas.
+
+### `DataExportService`
+Exporta todos os dados do usuário (tarefas, notas, hábitos, transações, metas, sessões Pomodoro, anotações de calendário e configurações) para um arquivo JSON de backup, e permite reimportar esse backup substituindo os dados atuais.
+
+### `DiscordService`
+Inicializa e atualiza a presença rica (Rich Presence) do FocusVisk no Discord, mostrando o que o usuário está fazendo na aplicação (ex: em sessão de foco) e o tempo decorrido.
+
 ---
 
 ## Funcionalidades
@@ -156,12 +185,18 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Listagem rápida de tarefas pendentes
 
 **Tarefas**
-- Cadastro com título, descrição, prioridade (`Low / Medium / High`), tag, prazo e subtarefas
+- Cadastro com título, descrição, prioridade (`Low / Medium / High`), tag colorida, prazo e subtarefas
 - Recorrência diária, em dias úteis, semanal ou mensal, com exibição opcional no calendário
 - Horário agendado com notificação nativa do Windows no momento configurado
 - Filtros por status (todas, pendentes, concluídas) e prioridade
 - Toggle de conclusão (inclusive de subtarefas) e exclusão
 - Reset automático de tarefas recorrentes concluídas ao chegar uma nova ocorrência
+- Criação rápida via atalho de teclado `Ctrl+N`
+
+**Busca Global**
+- Paleta de busca acionada pelo atalho `Ctrl+K` em qualquer tela
+- Busca unificada em tarefas, notas e hábitos, com resultados agrupados por tipo
+- Navegação por teclado e atalho direto para o item encontrado
 
 **Hábitos**
 - Cadastro de hábitos com ícone e cor customizáveis
@@ -174,6 +209,8 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Skip e reset de fase
 - Persistência automática de sessões concluídas
 - Integração com `FocusBlockerService` para bloquear sites durante o foco
+- Início/pausa rápidos via atalho de teclado `Ctrl+Shift+P`
+- Presença atualizada em tempo real no Discord durante as sessões
 
 **Calendário**
 - Navegação mensal
@@ -181,7 +218,8 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Exibição de tarefas (inclusive recorrentes) nos dias em que ocorrem
 
 **Notas Rápidas**
-- Criação e edição inline
+- Criação e edição inline com suporte a **Markdown** (negrito, itálico, listas, código) e pré-visualização renderizada
+- Organização em pastas e por tags coloridas
 - Fixação de notas ao topo
 
 **Finanças**
@@ -198,6 +236,8 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - Alternância entre tema claro e escuro
 - Customização de cor de destaque e cores de fundo
 - Ativar/desativar inicialização automática com o Windows (em segundo plano, direto na bandeja)
+- Exportar todos os dados para um arquivo JSON de backup
+- Importar um backup JSON, substituindo os dados atuais
 
 **System Tray**
 - Aplicação minimiza para a bandeja do sistema
@@ -227,4 +267,6 @@ Persiste e aplica preferências visuais (tema claro/escuro/customizado, cor de d
 - **Inicialização automática:** ao ativar "Iniciar com o Windows" nas configurações, o app é registrado no `Run` do registro com um argumento que faz com que ele abra direto em segundo plano, sem exibir a janela principal.
 - **WebView2:** o `Microsoft.AspNetCore.Components.WebView.Wpf` inclui o runtime do WebView2 automaticamente via NuGet; não é necessário instalar separadamente.
 - **Font Awesome:** os ícones são carregados localmente a partir de `wwwroot/lib/fontawesome`, sem dependência de CDN externo.
-- **EM DESENVOLVIMENTO, O PROJETO FOI IDEALIZADO PARA AUXILIAR NO MEU APRENDIZADO, AINDA RECEBERÁ NOVAS IMPLEMENTAÇÕES FUTURAMENTE.**
+- **Backup de dados:** o `DataExportService` exporta todo o banco de dados do usuário em um único arquivo JSON; a importação substitui integralmente os dados atuais, então recomenda-se fazer um export antes de importar um backup antigo.
+- **Discord Rich Presence:** requer o cliente do Discord aberto na máquina para exibir o status; caso não esteja disponível, a aplicação segue funcionando normalmente sem a integração.
+- **v1.0 lançada:** a versão Desktop já está estável e disponível na aba [Releases](https://github.com/opedrovisk/FocusVisk/releases). O projeto foi idealizado para auxiliar no meu aprendizado e continuará recebendo novas implementações.
