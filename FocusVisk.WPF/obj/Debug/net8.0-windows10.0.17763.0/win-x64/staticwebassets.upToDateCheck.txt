@@ -1,0 +1,8 @@
+wwwroot\css\app.css
+wwwroot\index.html
+wwwroot\js\app.js
+wwwroot\lib\fontawesome\css\all.min.css
+wwwroot\lib\fontawesome\webfonts\fa-brands-400.woff2
+wwwroot\lib\fontawesome\webfonts\fa-regular-400.woff2
+wwwroot\lib\fontawesome\webfonts\fa-solid-900.woff2
+wwwroot\lib\fontawesome\webfonts\fa-v4compatibility.woff2

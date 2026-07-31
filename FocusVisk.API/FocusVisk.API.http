@@ -1,0 +1,6 @@
+@FocusVisk.API_HostAddress = http://localhost:5049
+
+GET {{FocusVisk.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
