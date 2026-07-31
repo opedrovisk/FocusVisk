@@ -1,0 +1,429 @@
+@inject TaskService TaskSvc
+@inject ShortcutService ShortcutSvc
+@implements IDisposable
+
+<div class="page-header flex justify-between items-center">
+    <div>
+        <h1 class="page-title">Tarefas</h1>
+        <p class="page-subtitle">@_pending pendentes · @_done concluídas</p>
+    </div>
+    <button class="btn btn-primary" @onclick="OpenNewTask"><i class="fa-solid fa-plus"></i> Nova tarefa</button>
+</div>
+
+@if (_showForm)
+{
+    <div class="card mb-4">
+        <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">
+            @(_editItem?.Id > 0 ? "Editar tarefa" : "Nova tarefa")
+        </h3>
+        <div class="flex-col gap-3">
+            <input class="input" placeholder="Título da tarefa..." @bind="_formTitle" />
+            <textarea class="textarea" placeholder="Descrição (opcional)..." @bind="_formDescription" style="min-height:72px;"></textarea>
+
+            <div class="grid-3">
+                <div>
+                    <label class="text-sm text-muted">Prioridade</label>
+                    <select class="select mt-1" @bind="_formPriority">
+                        <option value="0">Baixa</option>
+                        <option value="1">Média</option>
+                        <option value="2">Alta</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm text-muted">Tag</label>
+                    <input class="input mt-1" placeholder="ex: trabalho, estudo..." @bind="_formTag" />
+                </div>
+                <div>
+                    <label class="text-sm text-muted">Data limite</label>
+                    <input type="date" class="input mt-1" @bind="_formDueDate" />
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top:14px;">
+                <div style="display:flex; gap:32px; flex-wrap:wrap; margin-bottom:12px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;">
+                        <input type="checkbox" @bind="_formShowInCalendar"
+                               style="width:16px; height:16px; accent-color:var(--accent-purple); cursor:pointer;" />
+                        <span class="text-sm">
+                            <i class="fa-solid fa-calendar-days" style="color:var(--accent-purple); margin-right:4px;"></i>
+                            Mostrar no calendário
+                        </span>
+                    </label>
+                </div>
+
+                <p class="text-sm text-muted" style="margin-bottom:10px;">
+                    <i class="fa-solid fa-bell" style="color:var(--accent-purple); margin-right:6px;"></i>
+                    Automação / Alerta
+                </p>
+                <div class="grid-3">
+                    <div>
+                        <label class="text-sm text-muted">Horário do alerta</label>
+                        <input type="time" class="input mt-1" @bind="_formScheduledTime" />
+                    </div>
+                    <div style="display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:2px;">
+                        <label class="text-sm text-muted" style="margin-bottom:8px;">Recorrente</label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;">
+                            <input type="checkbox" @bind="_formIsRecurring"
+                                   style="width:16px; height:16px; accent-color:var(--accent-purple); cursor:pointer;" />
+                            <span class="text-sm">Repetir tarefa</span>
+                        </label>
+                    </div>
+                    @if (_formIsRecurring)
+                    {
+                        <div>
+                            <label class="text-sm text-muted">Repetição</label>
+                            <select class="select mt-1" @bind="_formRecurrenceType">
+                                <option value="0">Diário</option>
+                                <option value="1">Dias úteis (seg–sex)</option>
+                                <option value="2">Semanal (mesmo dia)</option>
+                                <option value="3">Mensal (mesmo dia)</option>
+                            </select>
+                        </div>
+                    }
+                </div>
+                @if (_formIsRecurring)
+                {
+                    <p class="text-sm text-muted" style="margin-top:8px;">
+                        <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
+                        @GetRecurrenceHint()
+                    </p>
+                }
+            </div>
+
+            <div class="flex gap-2">
+                <button class="btn btn-primary" @onclick="SaveTask">Salvar</button>
+                <button class="btn btn-ghost" @onclick="CloseForm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="flex gap-2 mb-4">
+    <button class="btn @(_filter == "all" ? "btn-primary" : "btn-ghost")" @onclick='() => SetFilter("all")'>Todas</button>
+    <button class="btn @(_filter == "pending" ? "btn-primary" : "btn-ghost")" @onclick='() => SetFilter("pending")'>Pendentes</button>
+    <button class="btn @(_filter == "done" ? "btn-primary" : "btn-ghost")" @onclick='() => SetFilter("done")'>Concluídas</button>
+</div>
+
+@if (_filtered.Count == 0)
+{
+    <div class="card text-center" style="padding: 48px;">
+        <p style="font-size:32px; margin-bottom:12px;"><i class="fa-solid fa-list-check"></i></p>
+        <p class="text-muted">Nenhuma tarefa aqui.</p>
+    </div>
+}
+else
+{
+    @foreach (var item in _filtered)
+    {
+        var it = item;
+        <div class="card mb-2" style="padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="todo-check @(it.IsCompleted ? "checked" : "")"
+                     style="flex-shrink:0; cursor:pointer;"
+                     @onclick="() => ToggleTask(it.Id)">
+                    @if (it.IsCompleted)
+                    {
+                        <i class="fa-solid fa-check" style="color:#fff; font-size:10px;"></i>
+                    }
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="todo-title @(it.IsCompleted ? "" : "")"
+                         style="@(it.IsCompleted ? "text-decoration:line-through; opacity:.6;" : "")">
+                        @it.Title
+                    </div>
+                    @if (!string.IsNullOrEmpty(it.Description))
+                    {
+                        <div class="todo-meta truncate">@it.Description</div>
+                    }
+                </div>
+
+                @if (it.ShowInCalendar)
+                {
+                    <span class="badge badge-purple" title="Aparece no calendário">
+                        <i class="fa-solid fa-calendar-days" style="font-size:9px;"></i>
+                    </span>
+                }
+                @if (it.ScheduledTime.HasValue)
+                {
+                    <span class="badge badge-purple" title="@(it.IsRecurring ? GetRecurrenceLabelShort(it.RecurrenceType) : "Alerta único")">
+                        <i class="fa-solid fa-bell" style="font-size:9px; margin-right:3px;"></i>
+                        @it.ScheduledTime.Value.ToString(@"hh\:mm")
+                        @if (it.IsRecurring)
+                        {
+                            <i class="fa-solid fa-rotate" style="font-size:9px; margin-left:3px;"></i>
+                        }
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(it.Tag))
+                {
+                    <span class="badge @TagService.TagBadgeClass(it.Tag)">@it.Tag</span>
+                }
+                <span class="badge @GetPriorityBadge(it.Priority)">@GetPriorityLabel(it.Priority)</span>
+                @if (it.DueDate.HasValue)
+                {
+                    <span class="text-sm text-muted">
+                        <i class="fa-solid fa-calendar-days"></i> @it.DueDate.Value.ToString("dd/MM")
+                    </span>
+                }
+                @if (it.SubTasks.Count > 0)
+                {
+                    var done = it.SubTasks.Count(s => s.IsCompleted);
+                    <span class="text-sm text-muted" title="Subtarefas">
+                        <i class="fa-solid fa-bars-progress" style="margin-right:3px;"></i>@done/@it.SubTasks.Count
+                    </span>
+                }
+
+                <button class="btn btn-icon btn-ghost" @onclick="() => OpenAddSubTask(it)" title="Adicionar subtarefa">
+                    <i class="fa-solid fa-circle-plus"></i>
+                </button>
+                <button class="btn btn-icon btn-ghost" @onclick="() => EditTask(it)" title="Editar">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn btn-icon btn-danger" @onclick="() => DeleteTask(it.Id)" title="Excluir">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+
+            @if (it.SubTasks.Count > 0 || _addSubTaskParentId == it.Id)
+            {
+                <div style="margin-top:10px; padding-left:28px; border-left:2px solid var(--border);">
+                    @foreach (var sub in it.SubTasks)
+                    {
+                        var s = sub;
+                        <div style="display:flex; align-items:center; gap:8px; padding:5px 0;">
+                            <div class="todo-check @(s.IsCompleted ? "checked" : "")"
+                                 style="flex-shrink:0; cursor:pointer; width:16px; height:16px;"
+                                 @onclick="() => ToggleSubTask(s.Id)">
+                                @if (s.IsCompleted)
+                                {
+                                    <i class="fa-solid fa-check" style="color:#fff; font-size:9px;"></i>
+                                }
+                            </div>
+                            <span style="flex:1; font-size:13px; @(s.IsCompleted ? "text-decoration:line-through; opacity:.55;" : "")">
+                                @s.Title
+                            </span>
+                            <button class="btn btn-icon btn-danger" style="width:22px;height:22px;font-size:10px;"
+                                    @onclick="() => DeleteTask(s.Id)">
+                                ✕
+                            </button>
+                        </div>
+                    }
+
+                    @if (_addSubTaskParentId == it.Id)
+                    {
+                        <div style="display:flex; gap:6px; margin-top:6px;">
+                            <input class="input" style="flex:1; font-size:13px; padding:5px 10px;"
+                                   placeholder="Título da subtarefa..."
+                                   @bind="_subTaskTitle"
+                                   @onkeydown="HandleSubTaskKey" />
+                            <button class="btn btn-primary" style="font-size:12px; padding:5px 10px;"
+                                    @onclick="SaveSubTask">
+                                +
+                            </button>
+                            <button class="btn btn-ghost" style="font-size:12px; padding:5px 8px;"
+                                    @onclick="CancelSubTask">
+                                ✕
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<TodoItem> _tasks = new();
+    private List<TodoItem> _filtered = new();
+    private string _filter = "all";
+    private bool _showForm;
+    private TodoItem? _editItem;
+
+    private string _formTitle = "";
+    private string? _formDescription;
+    private string? _formTag;
+    private int _formPriority = 1;
+    private DateTime? _formDueDate;
+    private bool _formShowInCalendar = false;
+
+    private TimeOnly? _formScheduledTime;
+    private bool _formIsRecurring = false;
+    private int _formRecurrenceType = 0;
+
+    private int? _addSubTaskParentId;
+    private string _subTaskTitle = "";
+
+    private int _pending => _tasks.Count(t => !t.IsCompleted);
+    private int _done => _tasks.Count(t => t.IsCompleted);
+
+    protected override async Task OnInitializedAsync()
+    {
+        TaskSvc.OnChanged += HandleChanged;
+        ShortcutSvc.OnNewTaskRequested += HandleNewTaskShortcut;
+        await LoadAsync();
+        if (ShortcutSvc.ConsumePendingNewTask())
+        {
+            OpenNewTask();
+        }
+    }
+
+    private void HandleNewTaskShortcut()
+    {
+        ShortcutSvc.ConsumePendingNewTask();
+        InvokeAsync(() =>
+        {
+            OpenNewTask();
+            StateHasChanged();
+        });
+    }
+
+    private async void HandleChanged()
+    {
+        await LoadAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        _tasks = await TaskSvc.GetAllAsync();
+        ApplyFilter();
+    }
+
+    private void SetFilter(string f) { _filter = f; ApplyFilter(); }
+
+    private void ApplyFilter()
+    {
+        _filtered = _filter switch
+        {
+            "pending" => _tasks.Where(t => !t.IsCompleted).ToList(),
+            "done" => _tasks.Where(t => t.IsCompleted).ToList(),
+            _ => _tasks.ToList()
+        };
+    }
+
+    private void OpenNewTask()
+    {
+        _editItem = new TodoItem();
+        _formTitle = ""; _formDescription = null; _formTag = null;
+        _formPriority = 1; _formDueDate = null; _formShowInCalendar = false;
+        _formScheduledTime = null; _formIsRecurring = false; _formRecurrenceType = 0;
+        _showForm = true;
+    }
+
+    private void EditTask(TodoItem item)
+    {
+        _editItem = item;
+        _formTitle = item.Title;
+        _formDescription = item.Description;
+        _formTag = item.Tag;
+        _formPriority = (int)item.Priority;
+        _formDueDate = item.DueDate;
+        _formShowInCalendar = item.ShowInCalendar;
+        _formScheduledTime = item.ScheduledTime.HasValue
+                                ? TimeOnly.FromTimeSpan(item.ScheduledTime.Value)
+                                : null;
+        _formIsRecurring = item.IsRecurring;
+        _formRecurrenceType = item.RecurrenceType.HasValue ? (int)item.RecurrenceType.Value : 0;
+        _showForm = true;
+    }
+
+    private async Task SaveTask()
+    {
+        if (string.IsNullOrWhiteSpace(_formTitle)) return;
+        var item = _editItem ?? new TodoItem();
+        item.Title = _formTitle.Trim();
+        item.Description = _formDescription;
+        item.Tag = _formTag;
+        item.Priority = (Priority)_formPriority;
+        item.DueDate = _formDueDate;
+        item.ShowInCalendar = _formShowInCalendar;
+        item.ScheduledTime = _formScheduledTime.HasValue
+                                ? _formScheduledTime.Value.ToTimeSpan()
+                                : null;
+        item.IsRecurring = _formIsRecurring;
+        item.RecurrenceType = _formIsRecurring ? (RecurrenceType?)_formRecurrenceType : null;
+        item.LastAlertFiredAt = null;
+
+        if (item.Id == 0) await TaskSvc.AddAsync(item);
+        else await TaskSvc.UpdateAsync(item);
+        CloseForm();
+    }
+
+    private void CloseForm() { _showForm = false; _editItem = null; }
+
+    private async Task ToggleTask(int id) => await TaskSvc.ToggleAsync(id);
+    private async Task ToggleSubTask(int id) => await TaskSvc.ToggleSubTaskAsync(id);
+    private async Task DeleteTask(int id) => await TaskSvc.DeleteAsync(id);
+
+    private void OpenAddSubTask(TodoItem parent)
+    {
+        _addSubTaskParentId = parent.Id;
+        _subTaskTitle = "";
+    }
+
+    private void CancelSubTask()
+    {
+        _addSubTaskParentId = null;
+        _subTaskTitle = "";
+    }
+
+    private async Task SaveSubTask()
+    {
+        if (string.IsNullOrWhiteSpace(_subTaskTitle) || _addSubTaskParentId == null) return;
+        await TaskSvc.AddAsync(new TodoItem
+        {
+            Title = _subTaskTitle.Trim(),
+            ParentId = _addSubTaskParentId
+        });
+        _subTaskTitle = "";
+        _addSubTaskParentId = null;
+    }
+
+    private async Task HandleSubTaskKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SaveSubTask();
+        if (e.Key == "Escape") CancelSubTask();
+    }
+
+    private string GetPriorityBadge(Priority p) => p switch
+    {
+        Priority.High => "badge-coral",
+        Priority.Medium => "badge-amber",
+        _ => "badge-teal"
+    };
+
+    private string GetPriorityLabel(Priority p) => p switch
+    {
+        Priority.High => "Alta",
+        Priority.Medium => "Média",
+        _ => "Baixa"
+    };
+
+    private string GetRecurrenceHint() => _formRecurrenceType switch
+    {
+        0 => "Alerta disparará todos os dias neste horário.",
+        1 => "Alerta disparará de segunda a sexta neste horário.",
+        2 => _formDueDate.HasValue
+               ? $"Alerta disparará toda {_formDueDate.Value.ToString("dddd", new System.Globalization.CultureInfo("pt-BR"))} neste horário."
+               : "Defina uma data limite para usar repetição semanal.",
+        3 => _formDueDate.HasValue
+               ? $"Alerta disparará todo dia {_formDueDate.Value.Day} do mês neste horário."
+               : "Defina uma data limite para usar repetição mensal.",
+        _ => ""
+    };
+
+    private string GetRecurrenceLabelShort(RecurrenceType? type) => type switch
+    {
+        RecurrenceType.Daily => "Diário",
+        RecurrenceType.Weekdays => "Dias úteis",
+        RecurrenceType.Weekly => "Semanal",
+        RecurrenceType.Monthly => "Mensal",
+        _ => "Recorrente"
+    };
+
+    public void Dispose()
+    {
+        TaskSvc.OnChanged -= HandleChanged;
+        ShortcutSvc.OnNewTaskRequested -= HandleNewTaskShortcut;
+    }
+}

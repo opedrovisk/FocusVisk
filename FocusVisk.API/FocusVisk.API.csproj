@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.16" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FocusVisk.Application\FocusVisk.Application.csproj" />
+    <ProjectReference Include="..\FocusVisk.Infrastructure\FocusVisk.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

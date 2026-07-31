@@ -1,0 +1,456 @@
+@inject NotesService NotesSvc
+@inject TagService TagSvc
+@implements IDisposable
+
+<div class="notes-layout @(_sidebarOpen ? "sidebar-open" : "sidebar-closed")">
+
+    <aside class="notes-sidebar">
+        <div class="notes-sidebar-header">
+            <span class="notes-sidebar-title"><i class="fa-solid fa-folder-open"></i> Pastas</span>
+            @if (!_showNewFolder)
+            {
+                <button class="btn btn-icon btn-ghost" title="Nova pasta" @onclick="() => _showNewFolder = true">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            }
+        </div>
+
+        @if (_showNewFolder)
+        {
+            <div class="notes-folder-new">
+                <input class="input" placeholder="Nome da pasta..." @bind="_newFolderName"
+                       @onkeydown="OnNewFolderKey" />
+                <div class="flex gap-2 mt-2">
+                    <button class="btn btn-primary" style="font-size:12px; padding:5px 10px;"
+                            @onclick="CreateFolder">
+                        Criar
+                    </button>
+                    <button class="btn btn-ghost" style="font-size:12px; padding:5px 10px;"
+                            @onclick="() => { _showNewFolder = false; _newFolderName = string.Empty; }">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        }
+
+        <nav class="notes-folder-list">
+            <button class="notes-folder-item @(_activeFolder == null ? "active" : "")"
+                    @onclick="() => SelectFolder(null)">
+                <i class="fa-solid fa-layer-group"></i>
+                <span class="truncate">Todas</span>
+                <span class="notes-folder-badge">@_allNotes.Count</span>
+            </button>
+            <button class="notes-folder-item @(_activeFolder == SemPasta ? "active" : "")"
+                    @onclick='() => SelectFolder("__sem_pasta__")'>
+                <i class="fa-regular fa-file"></i>
+                <span class="truncate">Sem pasta</span>
+                <span class="notes-folder-badge">@_allNotes.Count(n => string.IsNullOrEmpty(n.FolderName))</span>
+            </button>
+
+            @foreach (var folder in _folders)
+            {
+                var f = folder;
+                <div class="notes-folder-row">
+                    @if (_renamingFolder == f)
+                    {
+                        <input class="input notes-folder-rename-input" @bind="_renameFolderValue"
+                               @onkeydown="e => OnRenameFolderKey(e, f)" />
+                    }
+                    else
+                    {
+                        <button class="notes-folder-item @(_activeFolder == f ? "active" : "") flex-1"
+                                @onclick="() => SelectFolder(f)">
+                            <i class="fa-solid fa-folder"></i>
+                            <span class="truncate">@f</span>
+                            <span class="notes-folder-badge">@_allNotes.Count(n => n.FolderName == f)</span>
+                        </button>
+                        <div class="notes-folder-actions">
+                            <button class="btn btn-icon btn-ghost" title="Renomear"
+                                    @onclick="() => StartRename(f)">
+                                <i class="fa-solid fa-pen" style="font-size:10px;"></i>
+                            </button>
+                            <button class="btn btn-icon btn-ghost" title="Excluir pasta"
+                                    @onclick="() => DeleteFolder(f)">
+                                <i class="fa-solid fa-trash" style="font-size:10px; color:var(--accent-coral);"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </nav>
+    </aside>
+
+    <div class="notes-main">
+        <div class="page-header flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <button class="notes-sidebar-toggle @(_sidebarOpen ? "open" : "")"
+                        title="@(_sidebarOpen ? "Fechar pastas" : "Abrir pastas")"
+                        @onclick="ToggleSidebar">
+                    <i class="fa-solid fa-folder-tree"></i>
+                    @if (_activeFolder != null && _activeFolder != SemPasta)
+                    {
+                        <span class="notes-sidebar-toggle-badge"></span>
+                    }
+                </button>
+                <div>
+                    <h1 class="page-title">
+                        @if (_activeFolder == null)
+                        {
+                            <text>Notas rápidas</text>
+                        }
+                        else if (_activeFolder == SemPasta)
+                        {
+
+                            <text>Sem pasta</text>
+                        }
+                        else
+                        {
+
+                            @_activeFolder
+                        }
+                    </h1>
+                    <p class="page-subtitle">@_filteredNotes.Count nota(s)</p>
+                </div>
+            </div>
+            <div class="flex gap-2 items-center">
+                <div class="notes-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass notes-search-icon"></i>
+                    <input class="input notes-search-input" placeholder="Buscar pelo título..."
+                           value="@_searchTerm" @oninput="OnSearch" />
+                    @if (!string.IsNullOrEmpty(_searchTerm))
+                    {
+                        <button class="notes-search-clear" @onclick="ClearSearch">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    }
+                </div>
+                <button class="btn btn-primary" @onclick="NewNote">
+                    <i class="fa-solid fa-plus"></i> Nova nota
+                </button>
+            </div>
+        </div>
+
+        @if (_availableTags.Count > 0)
+        {
+            <div class="flex gap-2 items-center mb-3" style="flex-wrap: wrap;">
+                <button class="badge @(_activeTag == null ? "badge-purple" : "badge-ghost")" style="cursor:pointer; border:none;" @onclick="() => SelectTag(null)">
+                    Todas as tags
+                </button>
+                @foreach (var tag in _availableTags)
+                {
+                    var t = tag;
+                    <button class="badge @(_activeTag == t ? TagService.TagBadgeClass(t) : "badge-ghost")" style="cursor:pointer; border:none;" @onclick="() => SelectTag(t)">
+                        @t
+                    </button>
+                }
+            </div>
+        }
+
+        @if (_editing != null)
+        {
+            <div class="card mb-4">
+                <div class="flex gap-2 mb-3">
+                    <input class="input" placeholder="Título..." @bind="_editing.Title"
+                           style="font-size:16px; font-weight:600; flex:1;" />
+                    <select class="select" style="max-width:180px;" @bind="_editing.FolderName">
+                        <option value="">Sem pasta</option>
+                        @foreach (var f in _folders)
+                        {
+                            <option value="@f">@f</option>
+                        }
+                    </select>
+                    <input class="input" placeholder="Tag..." style="max-width:140px;" @bind="_editing.Tag" />
+                </div>
+                <div class="flex gap-2 mb-3">
+                    <button class="btn @(!_previewMode ? "btn-primary" : "btn-ghost")" style="font-size:12px; padding:5px 10px;" @onclick="() => _previewMode = false">
+                        <i class="fa-solid fa-pen"></i> Editar
+                    </button>
+                    <button class="btn @(_previewMode ? "btn-primary" : "btn-ghost")" style="font-size:12px; padding:5px 10px;" @onclick="() => _previewMode = true">
+                        <i class="fa-brands fa-markdown"></i> Visualizar
+                    </button>
+                </div>
+                @if (_previewMode)
+                {
+                    <div class="markdown-body" style="min-height:180px;">
+                        @((MarkupString)MarkdownRenderer.ToHtml(_editing.Content))
+                    </div>
+                }
+                else
+                {
+                    <textarea class="textarea" placeholder="Escreva aqui... (suporta Markdown: **negrito**, *itálico*, listas, código...)"
+                              @bind="_editing.Content" style="min-height:180px;"></textarea>
+                }
+                <div class="flex gap-2 mt-3">
+                    <button class="btn btn-primary" @onclick="SaveNote">Salvar</button>
+                    <button class="btn btn-ghost" @onclick="() => _editing = null">Cancelar</button>
+                    @if (_editing.Id > 0)
+                    {
+                        <button class="btn btn-danger" @onclick="DeleteEditing">Excluir</button>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (_filteredNotes.Count == 0 && _editing == null)
+        {
+            <div class="card text-center" style="padding: 64px;">
+                <p style="font-size: 40px; margin-bottom: 12px;"><i class="fa-regular fa-note-sticky icon-xl"></i></p>
+                <p class="text-muted">
+                    @if (!string.IsNullOrEmpty(_searchTerm))
+                    {
+                        <text>Nenhuma nota encontrada para "@_searchTerm".</text>
+                    }
+                    else
+                    {
+
+                        <text>Nenhuma nota aqui. Crie uma!</text>
+                    }
+                </p>
+            </div>
+        }
+        else
+        {
+            @if (_filteredNotes.Any(n => n.IsPinned))
+            {
+                <p class="text-sm text-muted mb-2"><i class="fa-solid fa-thumbtack"></i> Fixadas</p>
+                <div class="grid-3 mb-4">
+                    @foreach (var note in _filteredNotes.Where(n => n.IsPinned))
+                    {
+                        var n = note;
+                        <div class="note-card pinned" @onclick="() => EditNote(n)">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="note-card-title truncate">@n.Title</span>
+                                <button class="btn btn-icon btn-ghost" style="font-size:12px;"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => TogglePin(n.Id)">
+                                    <i class="fa-solid fa-thumbtack"></i>
+                                </button>
+                            </div>
+                            @if (!string.IsNullOrEmpty(n.FolderName))
+                            {
+                                <span class="notes-folder-chip"><i class="fa-solid fa-folder"></i> @n.FolderName</span>
+                            }
+                            @if (!string.IsNullOrEmpty(n.Tag))
+                            {
+                                <span class="badge @TagService.TagBadgeClass(n.Tag)" style="margin-left:6px;">@n.Tag</span>
+                            }
+                            <p class="note-card-preview">@n.Content</p>
+                            <p class="text-sm text-muted mt-2">@n.UpdatedAt.ToString("dd/MM HH:mm")</p>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_filteredNotes.Any(n => !n.IsPinned))
+            {
+                <p class="text-sm text-muted mb-2">
+                    @(string.IsNullOrEmpty(_searchTerm) ? "Todas as notas" : $"Resultados para \"{_searchTerm}\"")
+                </p>
+                <div class="grid-3">
+                    @foreach (var note in _filteredNotes.Where(n => !n.IsPinned))
+                    {
+                        var n = note;
+                        <div class="note-card" @onclick="() => EditNote(n)">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="note-card-title truncate">@n.Title</span>
+                                <button class="btn btn-icon btn-ghost" style="font-size:12px;"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => TogglePin(n.Id)">
+                                    <i class="fa-solid fa-thumbtack"></i>
+                                </button>
+                            </div>
+                            @if (!string.IsNullOrEmpty(n.FolderName))
+                            {
+                                <span class="notes-folder-chip"><i class="fa-solid fa-folder"></i> @n.FolderName</span>
+                            }
+                            @if (!string.IsNullOrEmpty(n.Tag))
+                            {
+                                <span class="badge @TagService.TagBadgeClass(n.Tag)" style="margin-left:6px;">@n.Tag</span>
+                            }
+                            <p class="note-card-preview">@n.Content</p>
+                            <p class="text-sm text-muted mt-2">@n.UpdatedAt.ToString("dd/MM HH:mm")</p>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private const string SemPasta = "__sem_pasta__";
+
+    private List<QuickNote> _allNotes = new();
+    private List<QuickNote> _filteredNotes = new();
+    private List<string> _folders = new();
+    private QuickNote? _editing;
+    private string? _activeFolder;
+    private string _searchTerm = string.Empty;
+    private bool _showNewFolder;
+    private string _newFolderName = string.Empty;
+    private string? _renamingFolder;
+    private string _renameFolderValue = string.Empty;
+    private bool _sidebarOpen = false;
+    private List<string> _availableTags = new();
+    private string? _activeTag;
+    private bool _previewMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NotesSvc.OnChanged += HandleChanged;
+        await LoadAsync();
+    }
+
+    private async void HandleChanged()
+    {
+        await LoadAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        _allNotes = await NotesSvc.GetAllAsync();
+        _folders = await NotesSvc.GetFoldersAsync();
+        _availableTags = await TagSvc.GetAllTagsAsync();
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        IEnumerable<QuickNote> source = _allNotes;
+
+        if (_activeFolder == SemPasta)
+            source = source.Where(n => string.IsNullOrEmpty(n.FolderName));
+        else if (_activeFolder != null)
+            source = source.Where(n => n.FolderName == _activeFolder);
+
+        if (_activeTag != null)
+            source = source.Where(n => string.Equals(n.Tag, _activeTag, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+            source = source.Where(n => n.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+
+        _filteredNotes = source
+            .OrderByDescending(n => n.IsPinned)
+            .ThenByDescending(n => n.UpdatedAt)
+            .ToList();
+    }
+
+    private void SelectTag(string? tag)
+    {
+        _activeTag = tag;
+        ApplyFilter();
+    }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? string.Empty;
+        ApplyFilter();
+    }
+
+    private void ClearSearch()
+    {
+        _searchTerm = string.Empty;
+        ApplyFilter();
+    }
+
+    private void SelectFolder(string? folder)
+    {
+        _activeFolder = folder;
+        ApplyFilter();
+    }
+
+    private void NewNote()
+    {
+        _editing = new QuickNote
+        {
+            Title = "Nova nota",
+            FolderName = _activeFolder is null or SemPasta ? null : _activeFolder,
+            Tag = _activeTag
+        };
+        _previewMode = false;
+    }
+
+    private void EditNote(QuickNote note)
+    {
+        _editing = new QuickNote
+        {
+            Id = note.Id,
+            Title = note.Title,
+            Content = note.Content,
+            IsPinned = note.IsPinned,
+            FolderName = note.FolderName,
+            Tag = note.Tag
+        };
+        _previewMode = false;
+    }
+
+    private async Task SaveNote()
+    {
+        if (_editing == null) return;
+        if (string.IsNullOrWhiteSpace(_editing.FolderName)) _editing.FolderName = null;
+        if (string.IsNullOrWhiteSpace(_editing.Tag)) _editing.Tag = null;
+        else _editing.Tag = _editing.Tag.Trim();
+        await NotesSvc.SaveAsync(_editing);
+        _editing = null;
+    }
+
+    private async Task DeleteEditing()
+    {
+        if (_editing == null) return;
+        await NotesSvc.DeleteAsync(_editing.Id);
+        _editing = null;
+    }
+
+    private async Task TogglePin(int id) => await NotesSvc.TogglePinAsync(id);
+
+    private async void CreateFolder()
+    {
+        var name = _newFolderName.Trim();
+        if (string.IsNullOrEmpty(name) || _folders.Contains(name)) return;
+        _folders.Add(name);
+        _folders = _folders.OrderBy(f => f).ToList();
+        _showNewFolder = false;
+        _newFolderName = string.Empty;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnNewFolderKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") CreateFolder();
+        else if (e.Key == "Escape") { _showNewFolder = false; _newFolderName = string.Empty; }
+    }
+
+    private void StartRename(string folder)
+    {
+        _renamingFolder = folder;
+        _renameFolderValue = folder;
+    }
+
+    private async void OnRenameFolderKey(KeyboardEventArgs e, string oldName)
+    {
+        if (e.Key == "Enter") await CommitRename(oldName);
+        else if (e.Key == "Escape") _renamingFolder = null;
+    }
+
+    private async Task CommitRename(string oldName)
+    {
+        var newName = _renameFolderValue.Trim();
+        if (!string.IsNullOrEmpty(newName) && newName != oldName)
+        {
+            await NotesSvc.RenameFolderAsync(oldName, newName);
+            if (_activeFolder == oldName) _activeFolder = newName;
+        }
+        _renamingFolder = null;
+    }
+
+    private async Task DeleteFolder(string folder)
+    {
+        await NotesSvc.DeleteFolderAsync(folder);
+        if (_activeFolder == folder) _activeFolder = null;
+    }
+
+    public void Dispose() => NotesSvc.OnChanged -= HandleChanged;
+}

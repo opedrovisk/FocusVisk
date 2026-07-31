@@ -1,0 +1,79 @@
+﻿@inject ThemeService ThemeSvc
+@implements IDisposable
+
+<nav class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-text">
+            @if (ThemeSvc.ResenhaAtiva)
+            {
+                <span class="resenha-logo-eye">👀</span>
+            }
+            Focus<span>Visk</span>
+        </div>
+    </div>
+
+    <span class="nav-section-label">Principal</span>
+
+    <button class="nav-item @(CurrentPage == "dashboard" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("dashboard")'>
+        <span class="nav-icon"><i class="fa-solid fa-house-chimney"></i></span> Dashboard
+    </button>
+
+    <button class="nav-item @(CurrentPage == "tasks" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("tasks")'>
+        <span class="nav-icon"><i class="fa-solid fa-list-check"></i></span> Tarefas
+    </button>
+
+    <button class="nav-item @(CurrentPage == "pomodoro" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("pomodoro")'>
+        <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> Pomodoro
+    </button>
+
+    <button class="nav-item @(CurrentPage == "calendar" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("calendar")'>
+        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Calendário
+    </button>
+
+    <button class="nav-item @(CurrentPage == "notes" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("notes")'>
+        <span class="nav-icon"><i class="fa-solid fa-note-sticky"></i></span> Notas
+    </button>
+
+    <button class="nav-item @(CurrentPage == "habits" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("habits")'>
+        <span class="nav-icon"><i class="fa-solid fa-fire"></i></span> Hábitos
+    </button>
+
+    <button class="nav-item @(CurrentPage == "financas" ? "active" : "")"
+            @onclick='() => OnNavigate.InvokeAsync("financas")'>
+        <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span> Finanças
+    </button>
+
+    <div class="sidebar-bottom">
+        <span class="nav-section-label">Sistema</span>
+        <button class="nav-item @(CurrentPage == "settings" ? "active" : "")"
+                @onclick='() => OnNavigate.InvokeAsync("settings")'>
+            <span class="nav-icon"><i class="fa-solid fa-gear"></i></span> Configurações
+        </button>
+    </div>
+</nav>
+
+@code {
+    [Parameter] public string CurrentPage { get; set; } = "dashboard";
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ThemeSvc.OnResenhaChanged += OnResenhaChangedHandler;
+    }
+
+    private void OnResenhaChangedHandler()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeSvc.OnResenhaChanged -= OnResenhaChangedHandler;
+    }
+}

@@ -1,0 +1,176 @@
+@inject PomodoroService Pomodoro
+@implements IDisposable
+
+<div class="page-header">
+    <h1 class="page-title">Pomodoro</h1>
+    <p class="page-subtitle">Sessão @(Pomodoro.CompletedSessions + 1) · @GetPhaseLabel()</p>
+</div>
+
+<div style="display:grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start;">
+
+    <div class="card card-lg text-center">
+        <div style="margin-bottom: 20px;">
+            <span class="badge @GetPhaseBadge()">@GetPhaseLabel()</span>
+        </div>
+
+        <div class="pomodoro-ring" style="margin-bottom: 24px;">
+            <svg width="220" height="220" viewBox="0 0 220 220">
+                <circle class="ring-bg" cx="110" cy="110" r="96"/>
+                <circle class="ring-progress"
+                        cx="110" cy="110" r="96"
+                        stroke="@GetPhaseColor()"
+                        stroke-dasharray="@_circumference.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                        stroke-dashoffset="@_dashOffset.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                        style="transform-origin: center; transform: rotate(-90deg);"/>
+            </svg>
+            <div class="pomodoro-center">
+                <div class="pomodoro-time" style="color: @GetPhaseColor()">
+                    @Pomodoro.Remaining.ToString(@"mm\:ss")
+                </div>
+                <div class="pomodoro-phase">@GetPhaseLabel()</div>
+            </div>
+        </div>
+
+        <div class="flex justify-center gap-3 mb-4">
+            @if (!Pomodoro.IsRunning)
+            {
+                <button class="btn btn-primary" style="min-width:110px;" @onclick="StartPomodoro">
+                    <i class="fa-solid fa-play"></i> Iniciar
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-ghost" style="min-width:110px;" @onclick="Pomodoro.Pause">
+                    <i class="fa-solid fa-pause"></i> Pausar
+                </button>
+            }
+            <button class="btn btn-ghost btn-icon" @onclick="Pomodoro.Reset"  title="Reiniciar"><i class="fa-solid fa-rotate-left"></i></button>
+            <button class="btn btn-ghost btn-icon" @onclick="Pomodoro.Skip"   title="Pular"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+
+        <input class="input" placeholder="Em que você está trabalhando?"
+               @bind="_currentTask" disabled="@Pomodoro.IsRunning" />
+
+        <div class="flex justify-center gap-2 mt-4">
+            @for (int i = 0; i < Pomodoro.SessionsBeforeLongBreak; i++)
+            {
+                var idx = i;
+                <div style="width:10px; height:10px; border-radius:50%; background: @(idx < Pomodoro.CompletedSessions % Pomodoro.SessionsBeforeLongBreak ? "var(--accent-purple)" : "var(--bg-active)");"></div>
+            }
+        </div>
+    </div>
+
+    <div class="flex-col gap-4">
+        <div class="card">
+            <h3 style="font-size:14px; font-weight:600; margin-bottom:14px;">Como funciona</h3>
+            <div class="flex-col gap-3">
+                <div class="flex gap-3 items-center">
+                    <span style="font-size:22px;"><i class="fa-solid fa-clock icon-lg"></i></span>
+                    <div>
+                        <div style="font-size:13px; font-weight:500;">Foco — @Pomodoro.FocusDurationMinutes min</div>
+                        <div class="text-sm text-muted">Trabalhe sem distrações</div>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <span style="font-size:22px;"><i class="fa-solid fa-mug-saucer icon-lg"></i></span>
+                    <div>
+                        <div style="font-size:13px; font-weight:500;">Pausa curta — @Pomodoro.ShortBreakMinutes min</div>
+                        <div class="text-sm text-muted">Descanse e respire</div>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <span style="font-size:22px;"><i class="fa-solid fa-leaf icon-lg"></i></span>
+                    <div>
+                        <div style="font-size:13px; font-weight:500;">Pausa longa — @Pomodoro.LongBreakMinutes min</div>
+                        <div class="text-sm text-muted">A cada @Pomodoro.SessionsBeforeLongBreak sessões</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size:14px; font-weight:600; margin-bottom:10px;">Progresso do dia</h3>
+            <div style="font-size:40px; font-weight:700; color: var(--accent-purple); line-height:1;">
+                @Pomodoro.CompletedSessions
+            </div>
+            <div class="text-sm text-muted">sessões completadas</div>
+            <div style="margin-top:10px; font-size:13px; color: var(--text-secondary);">
+                ≈ @(Pomodoro.CompletedSessions * Pomodoro.FocusDurationMinutes) minutos de foco total
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? _currentTask;
+    private const double _circumference = 2 * Math.PI * 96; // ≈ 603.19
+    private double _dashOffset;
+
+    protected override void OnInitialized()
+    {
+        Pomodoro.OnTick        += OnTimerTick;
+        Pomodoro.OnPhaseChanged += OnPhaseChanged;
+        UpdateDashOffset();
+    }
+
+    private void StartPomodoro() => Pomodoro.Start(_currentTask);
+
+    private void OnTimerTick(TimeSpan remaining, bool isRunning)
+    {
+        UpdateDashOffset();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnPhaseChanged(PomodoroPhase phase)
+    {
+        UpdateDashOffset();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateDashOffset()
+    {
+        var totalSeconds = GetTotalMinutes() * 60.0;
+        var progress = totalSeconds > 0
+            ? 1.0 - (Pomodoro.Remaining.TotalSeconds / totalSeconds)
+            : 0;
+        _dashOffset = _circumference * (1.0 - progress);
+    }
+
+    private int GetTotalMinutes() => Pomodoro.CurrentPhase switch
+    {
+        PomodoroPhase.Focus      => Pomodoro.FocusDurationMinutes,
+        PomodoroPhase.ShortBreak => Pomodoro.ShortBreakMinutes,
+        PomodoroPhase.LongBreak  => Pomodoro.LongBreakMinutes,
+        _                        => 25
+    };
+
+    private string GetPhaseLabel() => Pomodoro.CurrentPhase switch
+    {
+        PomodoroPhase.Focus      => "Foco",
+        PomodoroPhase.ShortBreak => "Pausa curta",
+        PomodoroPhase.LongBreak  => "Pausa longa",
+        _                        => "Foco"
+    };
+
+    private string GetPhaseColor() => Pomodoro.CurrentPhase switch
+    {
+        PomodoroPhase.Focus      => "var(--accent-purple)",
+        PomodoroPhase.ShortBreak => "var(--accent-teal)",
+        PomodoroPhase.LongBreak  => "var(--accent-green)",
+        _                        => "var(--accent-purple)"
+    };
+
+    private string GetPhaseBadge() => Pomodoro.CurrentPhase switch
+    {
+        PomodoroPhase.Focus      => "badge-purple",
+        PomodoroPhase.ShortBreak => "badge-teal",
+        PomodoroPhase.LongBreak  => "badge-green",
+        _                        => "badge-purple"
+    };
+
+    public void Dispose()
+    {
+        Pomodoro.OnTick        -= OnTimerTick;
+        Pomodoro.OnPhaseChanged -= OnPhaseChanged;
+    }
+}

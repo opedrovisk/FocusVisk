@@ -1,0 +1,670 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject PomodoroService Pomodoro
+@inject FocusBlockerService Blocker
+@inject ThemeService ThemeSvc
+@inject IJSRuntime JS
+@inject FocusVisk.Services.StartupService StartupSvc
+@inject DataExportService DataExportSvc
+
+<div class="page-header">
+    <h1 class="page-title">Configurações</h1>
+</div>
+
+<div style="max-width: 620px;" class="flex-col gap-4">
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:18px;"><i class="fa-solid fa-clock"></i> Pomodoro</h2>
+        <div class="grid-2">
+            <div>
+                <label class="text-sm text-muted">Foco (minutos)</label>
+                <input type="number" class="input mt-1" min="1" max="120" @bind="_focusMin" />
+            </div>
+            <div>
+                <label class="text-sm text-muted">Pausa curta (minutos)</label>
+                <input type="number" class="input mt-1" min="1" max="60" @bind="_shortMin" />
+            </div>
+            <div>
+                <label class="text-sm text-muted">Pausa longa (minutos)</label>
+                <input type="number" class="input mt-1" min="1" max="60" @bind="_longMin" />
+            </div>
+            <div>
+                <label class="text-sm text-muted">Sessões antes da pausa longa</label>
+                <input type="number" class="input mt-1" min="2" max="8" @bind="_sessionsBeforeLong" />
+            </div>
+        </div>
+        <div class="flex items-center gap-3 mt-4">
+            <button class="btn btn-primary" @onclick="SavePomodoro">Salvar configurações</button>
+            @if (_pomodoroSaved)
+            {
+                <span class="badge badge-green">✓ Salvo!</span>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h2 style="font-size:15px; font-weight:600;"><i class="fa-solid fa-ban"></i> Bloqueio de foco</h2>
+                <p class="text-sm text-muted mt-1">Bloqueia sites durante o Pomodoro</p>
+            </div>
+            <span class="badge @(Blocker.IsBlocking ? "badge-coral" : "badge-teal")">
+                @(Blocker.IsBlocking
+                    ? (MarkupString)"<i class='fa-solid fa-lock'></i>&nbsp; Ativo"
+                    : (MarkupString)"<i class='fa-solid fa-lock-open'></i>&nbsp; Inativo")
+            </span>
+        </div>
+
+        <label class="text-sm text-muted">Sites a bloquear (um por linha)</label>
+        <textarea class="textarea mt-1" rows="5" @bind="_blockedSites"
+                  placeholder="youtube.com&#10;twitter.com&#10;instagram.com"></textarea>
+
+        @if (!string.IsNullOrEmpty(_blockerError))
+        {
+            <div style="margin-top:8px; padding:10px 14px; background: rgba(240,112,112,0.1);
+                border: 1px solid rgba(240,112,112,0.3); border-radius: var(--radius-md);
+                color: var(--accent-coral); font-size:13px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> @_blockerError
+            </div>
+        }
+
+        <div class="flex justify-between items-center mt-3">
+            <div class="flex gap-2">
+                <button class="btn btn-primary" @onclick="ApplyBlock"
+                        disabled="@Blocker.IsBlocking">
+                    Ativar bloqueio
+                </button>
+                <button class="btn btn-ghost" @onclick="RemoveBlock"
+                        disabled="@(!Blocker.IsBlocking)">
+                    Desativar
+                </button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="btn btn-ghost" @onclick="SaveSitesList">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar lista
+                </button>
+                @if (_sitesSaved)
+                {
+                    <span class="badge badge-green">✓ Salvo!</span>
+                }
+            </div>
+        </div>
+
+        <p class="text-sm text-muted mt-2">
+            <i class="fa-solid fa-triangle-exclamation"></i> Requer execução como Administrador para modificar o arquivo hosts.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:18px;">
+            <i class="fa-solid fa-palette"></i> Aparência
+        </h2>
+
+        <label class="text-sm text-muted">Tema</label>
+        <div class="flex gap-2 mt-1 mb-4">
+            <button class="btn @(ThemeSvc.Theme == "dark" ? "btn-primary" : "btn-ghost")"
+                    @onclick='() => SetPreset("dark")'>
+                <i class="fa-solid fa-moon"></i> Escuro
+            </button>
+            <button class="btn @(ThemeSvc.Theme == "light" ? "btn-primary" : "btn-ghost")"
+                    @onclick='() => SetPreset("light")'>
+                <i class="fa-solid fa-sun"></i> Claro
+            </button>
+            <button class="btn @(ThemeSvc.Theme == "custom" ? "btn-primary" : "btn-ghost")"
+                    @onclick="ShowCustom">
+                <i class="fa-solid fa-sliders"></i> Personalizado
+            </button>
+        </div>
+
+        @if (_showCustomColors)
+        {
+            <div class="grid-3 mb-4">
+                <div>
+                    <label class="text-sm text-muted">Cor de destaque</label>
+                    <div class="flex gap-2 mt-1 items-center">
+                        <input type="color" value="@_accentColor"
+                               @oninput="e => _accentColor = e.Value?.ToString() ?? _accentColor"
+                               style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+                        cursor:pointer; background:none; padding:0;" />
+                        <input class="input" @bind="_accentColor"
+                               placeholder="#7C6AF7" style="flex:1;" />
+                    </div>
+                    <p class="text-sm text-muted mt-1">Sidebar ativa, botões, foco</p>
+                </div>
+
+                <div>
+                    <label class="text-sm text-muted">Fundo da sidebar</label>
+                    <div class="flex gap-2 mt-1 items-center">
+                        <input type="color" value="@_sidebarColor"
+                               @oninput="e => _sidebarColor = e.Value?.ToString() ?? _sidebarColor"
+                               style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+                        cursor:pointer; background:none; padding:0;" />
+                        <input class="input" @bind="_sidebarColor"
+                               placeholder="#16161E" style="flex:1;" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm text-muted">Fundo principal</label>
+                    <div class="flex gap-2 mt-1 items-center">
+                        <input type="color" value="@_mainBgColor"
+                               @oninput="e => _mainBgColor = e.Value?.ToString() ?? _mainBgColor"
+                               style="width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+                        cursor:pointer; background:none; padding:0;" />
+                        <input class="input" @bind="_mainBgColor"
+                               placeholder="#0F0F14" style="flex:1;" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button class="btn btn-primary" @onclick="ApplyCustom">
+                    <i class="fa-solid fa-check"></i> Aplicar
+                </button>
+                @if (_themeSaved)
+                {
+                    <span class="badge badge-green">✓ Tema aplicado!</span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (ThemeSvc.ResenhaAtiva)
+    {
+        <div class="card resenha-card resenha-ativa">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 style="font-size:15px; font-weight:600;">👀 Modo Resenha</h2>
+                    <p class="text-sm text-muted mt-1">MODO RESENHA</p>
+                </div>
+                <button class="btn resenha-toggle resenha-on" @onclick="ToggleResenha">
+                    <span>👀 ON</span>
+                </button>
+            </div>
+
+            <div class="resenha-midia-section">
+                <div class="resenha-midia-divider"></div>
+                <p style="font-size:13px; font-weight:600; margin-bottom:6px;">
+                    <i class="fa-solid fa-film"></i> Mídia do bloqueio
+                </p>
+                <p class="text-sm text-muted" style="margin-bottom:14px;">
+                    Escolha um vídeo ou imagem para abrir automaticamente quando alguém tentar acessar um site bloqueado.
+                </p>
+                <div class="flex gap-2 items-center flex-wrap">
+                    <label class="btn btn-ghost resenha-upload-label">
+                        <i class="fa-solid fa-upload"></i>
+                        @(ThemeSvc.MidiaResenhaPath != null ? "Trocar arquivo" : "Escolher arquivo")
+                        <InputFile OnChange="OnMidiaSelected" accept="image/*,video/*"
+                                   style="display:none;" />
+                    </label>
+                    @if (ThemeSvc.MidiaResenhaPath != null)
+                    {
+                        <span class="text-sm text-muted resenha-midia-filename">
+                            <i class="fa-solid @(ThemeSvc.MidiaResenhaIsVideo ? "fa-film" : "fa-image")"></i>
+                            @_midiaFileName
+                        </span>
+                        <button class="btn btn-ghost btn-icon" @onclick="LimparMidia" title="Remover">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    }
+                </div>
+                @if (_midiaUploading)
+                {
+                    <p class="text-sm text-muted" style="margin-top:8px;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Salvando...
+                    </p>
+                }
+                @if (!string.IsNullOrEmpty(_midiaErro))
+                {
+                    <p style="margin-top:8px; font-size:12px; color:var(--accent-coral);">
+                        <i class="fa-solid fa-triangle-exclamation"></i> @_midiaErro
+                    </p>
+                }
+                @if (ThemeSvc.MidiaResenhaPath != null && !_midiaUploading)
+                {
+                    <p class="text-sm text-muted" style="margin-top:10px;">
+                        <i class="fa-solid fa-circle-check" style="color:var(--accent-green);"></i>
+                        Configurado — abrirá em tela cheia ao detectar acesso a site bloqueado.
+                    </p>
+                }
+            </div>
+        </div>
+    }
+
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:16px;"><i class="fa-solid fa-power-off"></i> Sistema</h2>
+        <div class="flex justify-between items-center">
+            <div>
+                <p style="font-size:14px; font-weight:500; color:var(--text-primary);">Iniciar com o Windows</p>
+                <p class="text-sm text-muted mt-1">O FocusVisk abre em segundo plano automaticamente quando o computador ligar.</p>
+            </div>
+            <label class="settings-toggle">
+                <input type="checkbox" checked="@_startupEnabled" @onchange="ToggleStartup" />
+                <span class="settings-toggle-track">
+                    <span class="settings-toggle-thumb"></span>
+                </span>
+            </label>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:16px;"><i class="fa-solid fa-database"></i> Dados</h2>
+        <div class="flex justify-between items-center">
+            <div>
+                <p style="font-size:14px; font-weight:500; color:var(--text-primary);">Exportar dados</p>
+                <p class="text-sm text-muted mt-1">Baixe todas as suas tarefas, notas, hábitos e finanças em um arquivo JSON.</p>
+            </div>
+            <button class="btn btn-ghost" style="min-width:130px; justify-content:center;" @onclick="ExportData" disabled="@_exportBusy">
+                @if (_exportBusy)
+                {
+                    <span>Exportando...</span>
+                }
+                else
+                {
+                    <span><i class="fa-solid fa-download"></i> Exportar</span>
+                }
+            </button>
+        </div>
+        <div class="flex justify-between items-center mt-4" style="padding-top:16px; border-top:1px solid var(--border);">
+            <div>
+                <p style="font-size:14px; font-weight:500; color:var(--text-primary);">Importar dados</p>
+                <p class="text-sm text-muted mt-1">Substitui todos os dados atuais pelos dados de um arquivo JSON exportado anteriormente.</p>
+            </div>
+            <button class="btn btn-ghost" style="min-width:130px; justify-content:center;" @onclick="ImportData" disabled="@_importBusy">
+                @if (_importBusy)
+                {
+                    <span>Importando...</span>
+                }
+                else
+                {
+                    <span><i class="fa-solid fa-upload"></i> Importar</span>
+                }
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(_dataStatusMsg))
+        {
+            <p class="text-sm mt-3" style="color: @(_dataStatusIsError ? "var(--accent-coral)" : "var(--accent-green)");">@_dataStatusMsg</p>
+        }
+    </div>
+
+    <div class="card">
+        <h2 style="font-size:15px; font-weight:600; margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> Sobre o FocusVisk</h2>
+        <p class="text-sm text-muted">Versão 1.0.0</p>
+        <p class="text-sm text-muted">.NET 8 · Blazor Hybrid · WPF · SQL Server</p>
+        <p class="text-sm text-muted mt-2">
+            Banco de dados:
+            <span class="font-mono" style="font-size:11px; color: var(--text-secondary);">
+                FocusViskDb (SQL Server LocalDB)
+            </span>
+        </p>
+    </div>
+</div>
+
+@if (_showResenhaPopup)
+{
+    <div class="resenha-popup-overlay" @onclick="FecharPopup">
+        <div class="resenha-popup" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-size:16px; font-weight:700;">👀 Modo Resenha</h2>
+                <button class="btn btn-icon btn-ghost" @onclick="FecharPopup">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center mb-3">
+                <p class="text-sm text-muted">
+                    @(ThemeSvc.ResenhaAtiva ? "MODO RESENHA ATIVO" : "Averiguarás?")
+                </p>
+                <button class="btn resenha-toggle @(ThemeSvc.ResenhaAtiva ? "resenha-on" : "resenha-off")"
+                        @onclick="ToggleResenha">
+                    @if (ThemeSvc.ResenhaAtiva)
+                    {
+                        <span>👀 ON</span>
+                    }
+                    else
+                    {
+                        <span>💤 OFF</span>
+                    }
+                </button>
+            </div>
+
+            @if (_showResenhaConfirm)
+            {
+                <div class="resenha-confirm-box">
+                    <p style="font-size:14px; font-weight:600; margin-bottom:8px;">
+                        👀 Tem certeza que ativarás o modo resenha?
+                    </p>
+                    <p class="text-sm text-muted" style="margin-bottom:16px;">
+                        O sistema entrará na resenha. Não há como escapar após ativado.
+                    </p>
+                    <div class="flex gap-2">
+                        <button class="btn btn-primary" @onclick="ConfirmarResenha">Sim, ativar a resenha</button>
+                        <button class="btn btn-ghost" @onclick="CancelarResenha">Compensa não</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<button class="resenha-fab @(ThemeSvc.ResenhaAtiva ? "resenha-fab-ativa" : "")"
+        title="Modo Resenha"
+        @onclick="AbrirPopup">
+    <i class="fa-solid fa-eye"></i>
+</button>
+
+@code {
+    private int _focusMin = 25;
+    private int _shortMin = 5;
+    private int _longMin = 15;
+    private int _sessionsBeforeLong = 4;
+    private bool _pomodoroSaved;
+
+    private string _blockedSites = string.Empty;
+    private string? _blockerError;
+    private bool _sitesSaved;
+
+    private bool _showCustomColors;
+    private string _accentColor = "#7C6AF7";
+    private string _sidebarColor = "#16161E";
+    private string _mainBgColor = "#0F0F14";
+    private bool _themeSaved;
+
+    private bool _showResenhaConfirm = false;
+    private bool _showResenhaPopup = false;
+
+    private bool _startupEnabled;
+
+    private string? _midiaFileName;
+    private string? _midiaErro;
+    private bool _midiaUploading = false;
+
+    private bool _exportBusy;
+    private bool _importBusy;
+    private string? _dataStatusMsg;
+    private bool _dataStatusIsError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _focusMin = Pomodoro.FocusDurationMinutes;
+        _shortMin = Pomodoro.ShortBreakMinutes;
+        _longMin = Pomodoro.LongBreakMinutes;
+        _sessionsBeforeLong = Pomodoro.SessionsBeforeLongBreak;
+
+        _accentColor = ThemeSvc.AccentColor;
+        _sidebarColor = ThemeSvc.SidebarBgColor;
+        _mainBgColor = ThemeSvc.MainBgColor;
+        _showCustomColors = ThemeSvc.Theme == "custom";
+
+        _blockedSites = await Blocker.GetBlockedSitesAsync();
+
+        if (ThemeSvc.MidiaResenhaPath != null)
+            _midiaFileName = System.IO.Path.GetFileName(ThemeSvc.MidiaResenhaPath);
+
+        _startupEnabled = StartupSvc.IsStartupEnabled();
+    }
+
+    private void AbrirPopup()
+    {
+        _showResenhaPopup = true;
+    }
+
+    private void ToggleStartup(ChangeEventArgs e)
+    {
+        _startupEnabled = e.Value is true;
+        StartupSvc.SetEnabled(_startupEnabled);
+    }
+
+    private void FecharPopup()
+    {
+        _showResenhaPopup = false;
+        _showResenhaConfirm = false;
+    }
+
+    private async Task SavePomodoro()
+    {
+        Pomodoro.UpdateSettings(_focusMin, _shortMin, _longMin, _sessionsBeforeLong);
+        _pomodoroSaved = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _pomodoroSaved = false;
+        StateHasChanged();
+    }
+
+    private async Task SaveSitesList()
+    {
+        await Blocker.SaveBlockedSitesAsync(_blockedSites);
+        _sitesSaved = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _sitesSaved = false;
+        StateHasChanged();
+    }
+
+    private async Task ApplyBlock()
+    {
+        _blockerError = null;
+        try
+        {
+            var sites = _blockedSites.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            await Blocker.BlockAsync(sites);
+        }
+        catch (Exception ex) { _blockerError = ex.Message; }
+        StateHasChanged();
+    }
+
+    private async Task RemoveBlock()
+    {
+        _blockerError = null;
+        try { await Blocker.UnblockAsync(); }
+        catch (Exception ex) { _blockerError = ex.Message; }
+        StateHasChanged();
+    }
+
+    private async Task SetPreset(string preset)
+    {
+        _showCustomColors = false;
+        await ThemeSvc.SetPresetAsync(preset);
+        ShowSaved();
+    }
+
+    private void ShowCustom()
+    {
+        _showCustomColors = true;
+        StateHasChanged();
+    }
+
+    private async Task ApplyCustom()
+    {
+        await ThemeSvc.SetCustomAsync(_accentColor, _sidebarColor, _mainBgColor);
+        ShowSaved();
+    }
+
+    private async void ShowSaved()
+    {
+        _themeSaved = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _themeSaved = false;
+        StateHasChanged();
+    }
+
+    private void ToggleResenha()
+    {
+        if (ThemeSvc.ResenhaAtiva)
+            _ = DesativarResenhaAsync();
+        else
+            _showResenhaConfirm = true;
+    }
+
+    private async Task ConfirmarResenha()
+    {
+        _showResenhaConfirm = false;
+        _showResenhaPopup = false;
+        ThemeSvc.SetResenha(true);
+        StateHasChanged();
+        await ThemeSvc.SetPresetAsync("light");
+        await JS.InvokeVoidAsync("focusApp.ativarResenha");
+    }
+
+    private void CancelarResenha()
+    {
+        _showResenhaConfirm = false;
+    }
+
+    private async Task DesativarResenhaAsync()
+    {
+        ThemeSvc.SetResenha(false);
+        _midiaFileName = null;
+        _midiaErro = null;
+        _showResenhaPopup = false;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("focusApp.desativarResenha");
+        await ThemeSvc.SetPresetAsync("dark");
+    }
+
+    private async Task OnMidiaSelected(InputFileChangeEventArgs e)
+    {
+        _midiaErro = null;
+        var file = e.File;
+
+        var allowed = new[] {
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "video/mp4", "video/webm", "video/ogg", "video/quicktime"
+        };
+
+        if (!allowed.Contains(file.ContentType))
+        {
+            _midiaErro = "Formato não suportado. Use imagens (jpg, png, gif, webp) ou vídeos (mp4, webm).";
+            return;
+        }
+
+        const long maxBytes = 500L * 1024 * 1024;
+        if (file.Size > maxBytes)
+        {
+            _midiaErro = "Arquivo muito grande. Máximo 500 MB.";
+            return;
+        }
+
+        _midiaUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            var appData = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "FocusVisk");
+            System.IO.Directory.CreateDirectory(appData);
+
+            var ext = System.IO.Path.GetExtension(file.Name);
+            var destPath = System.IO.Path.Combine(appData, $"resenha_midia{ext}");
+
+            if (ThemeSvc.MidiaResenhaPath != null &&
+                ThemeSvc.MidiaResenhaPath != destPath &&
+                System.IO.File.Exists(ThemeSvc.MidiaResenhaPath))
+            {
+                try { System.IO.File.Delete(ThemeSvc.MidiaResenhaPath); } catch { }
+            }
+
+            using var stream = file.OpenReadStream(maxBytes);
+            using var fs = System.IO.File.Create(destPath);
+            await stream.CopyToAsync(fs);
+
+            var isVideo = file.ContentType.StartsWith("video/");
+            await ThemeSvc.SetMidiaResenhaAsync(destPath, isVideo);
+            _midiaFileName = file.Name;
+        }
+        catch (Exception ex)
+        {
+            _midiaErro = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            _midiaUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LimparMidia()
+    {
+        await ThemeSvc.LimparMidiaResenhaAsync();
+        _midiaFileName = null;
+        _midiaErro = null;
+        StateHasChanged();
+    }
+
+    private async Task ExportData()
+    {
+        _exportBusy = true;
+        _dataStatusMsg = null;
+        StateHasChanged();
+
+        try
+        {
+            var json = await DataExportSvc.ExportAsync();
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = $"focusvisk-backup-{DateTime.Now:yyyy-MM-dd}.json",
+                Filter = "Arquivo JSON (*.json)|*.json"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                await System.IO.File.WriteAllTextAsync(dialog.FileName, json);
+                _dataStatusMsg = "Dados exportados com sucesso.";
+                _dataStatusIsError = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _dataStatusMsg = $"Erro ao exportar: {ex.Message}";
+            _dataStatusIsError = true;
+        }
+        finally
+        {
+            _exportBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ImportData()
+    {
+        var confirm = System.Windows.MessageBox.Show(
+            "Isso vai substituir todos os seus dados atuais pelos dados do arquivo importado. Essa ação não pode ser desfeita. Deseja continuar?",
+            "Importar dados",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Arquivo JSON (*.json)|*.json"
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        _importBusy = true;
+        _dataStatusMsg = null;
+        StateHasChanged();
+
+        try
+        {
+            var json = await System.IO.File.ReadAllTextAsync(dialog.FileName);
+            await DataExportSvc.ImportAsync(json);
+            _dataStatusMsg = "Dados importados com sucesso. Reinicie o FocusVisk para ver as mudanças em todas as telas.";
+            _dataStatusIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _dataStatusMsg = $"Erro ao importar: {ex.Message}";
+            _dataStatusIsError = true;
+        }
+        finally
+        {
+            _importBusy = false;
+            StateHasChanged();
+        }
+    }
+}
