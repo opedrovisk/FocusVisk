@@ -1,5 +1,8 @@
+using FocusVisk.Application.Services;
+using FocusVisk.Core.Interfaces;
 using FocusVisk.Infrastructure.Data;
 using FocusVisk.Infrastructure.Identity;
+using FocusVisk.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +22,11 @@ builder.Services
     .AddDefaultTokenProviders();
 
 builder.Services.AddAutoMapper(cfg => { }, typeof(FocusVisk.Application.AssemblyReference).Assembly);
+
+builder.Services.AddScoped<ITodoRepository, TodoRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+
+builder.Services.AddControllers();
 
 builder.Services.AddControllersWithViews();
 
