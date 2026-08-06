@@ -48,6 +48,8 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(FocusVisk.Application.Assembly
 
 builder.Services.AddScoped<ITodoRepository, TodoRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
+builder.Services.AddScoped<IFinanceService, FinanceService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
