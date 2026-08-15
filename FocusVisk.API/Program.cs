@@ -1,6 +1,8 @@
-using System.Text;
+using FocusVisk.Application.Services;
+using FocusVisk.Application.Services.Calendar;
 using FocusVisk.Application.Services.Finance;
 using FocusVisk.Application.Services.Habit;
+using FocusVisk.Application.Services.Note;
 using FocusVisk.Application.Services.Task;
 using FocusVisk.Core.Interfaces;
 using FocusVisk.Infrastructure.Data;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,10 +53,27 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(FocusVisk.Application.Assembly
 
 builder.Services.AddScoped<ITodoRepository, TodoRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+
 builder.Services.AddScoped<IFinanceRepository, FinanceRepository>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
+
 builder.Services.AddScoped<IHabitRepository, HabitRepository>();
 builder.Services.AddScoped<IHabitService, HabitService>();
+
+builder.Services.AddScoped<INoteRepository, NoteRepository>();
+builder.Services.AddScoped<INoteService, NoteService>();
+
+builder.Services.AddScoped<ICalendarRepository, CalendarRepository>();
+builder.Services.AddScoped<ICalendarService, CalendarService>();
+
+builder.Services.AddScoped<IPomodoroRepository, PomodoroRepository>();
+builder.Services.AddScoped<IPomodoroService, PomodoroService>();
+
+builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
+
+builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
