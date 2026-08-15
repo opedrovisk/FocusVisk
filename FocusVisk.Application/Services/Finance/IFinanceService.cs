@@ -1,6 +1,6 @@
 ﻿using FocusVisk.Application.DTOs;
 
-namespace FocusVisk.Application.Services;
+namespace FocusVisk.Application.Services.Finance;
 
 public interface IFinanceService
 {

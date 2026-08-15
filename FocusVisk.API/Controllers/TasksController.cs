@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 using FocusVisk.Application.DTOs;
-using FocusVisk.Application.Services;
+using FocusVisk.Application.Services.Task;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

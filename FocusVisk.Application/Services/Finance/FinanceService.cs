@@ -4,7 +4,7 @@ using FocusVisk.Core.Enums;
 using FocusVisk.Core.Interfaces;
 using FocusVisk.Core.Models;
 
-namespace FocusVisk.Application.Services;
+namespace FocusVisk.Application.Services.Finance;
 
 public class FinanceService : IFinanceService
 {

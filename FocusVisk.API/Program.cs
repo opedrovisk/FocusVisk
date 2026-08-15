@@ -1,5 +1,7 @@
 using System.Text;
-using FocusVisk.Application.Services;
+using FocusVisk.Application.Services.Finance;
+using FocusVisk.Application.Services.Habit;
+using FocusVisk.Application.Services.Task;
 using FocusVisk.Core.Interfaces;
 using FocusVisk.Infrastructure.Data;
 using FocusVisk.Infrastructure.Identity;

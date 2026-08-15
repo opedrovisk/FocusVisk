@@ -3,7 +3,7 @@ using FocusVisk.Application.DTOs;
 using FocusVisk.Core.Interfaces;
 using FocusVisk.Core.Models;
 
-namespace FocusVisk.Application.Services;
+namespace FocusVisk.Application.Services.Habit;
 
 public class HabitService : IHabitService
 {
