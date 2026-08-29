@@ -5,32 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - FocusVisk</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body>
-    <div class="d-flex">
-        <nav class="sidebar bg-dark text-white p-3" style="width:240px; min-height:100vh;">
-            <h4 class="mb-4">FocusVisk</h4>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <ul class="nav flex-column gap-2">
-                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Tasks" asp-action="Index"><i class="fa-solid fa-list-check"></i> Tarefas</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Habits" asp-action="Index"><i class="fa-solid fa-repeat"></i> Hábitos</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Finance" asp-action="Index"><i class="fa-solid fa-wallet"></i> Finanças</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Notes" asp-action="Index"><i class="fa-solid fa-note-sticky"></i> Notas</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Calendar" asp-action="Index"><i class="fa-solid fa-calendar"></i> Calendário</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Pomodoro" asp-action="Index"><i class="fa-solid fa-clock"></i> Pomodoro</a></li>
-                </ul>
-                <hr class="text-white-50" />
-                <form asp-controller="Account" asp-action="Logout" method="post">
-                    <button type="submit" class="btn btn-sm btn-outline-light w-100">Sair</button>
-                </form>
-            }
-        </nav>
+    <div class="app-shell">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <nav class="sidebar">
+                <div class="sidebar-logo">
+                    <div class="logo-text">Focus<span>Visk</span></div>
+                </div>
 
-        <main class="flex-grow-1 p-4">
+                <span class="nav-section-label">Principal</span>
+
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Home" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-house-chimney"></i></span> Dashboard
+                </a>
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tasks" ? "active" : "")" asp-controller="Tasks" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-list-check"></i></span> Tarefas
+                </a>
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Pomodoro" ? "active" : "")" asp-controller="Pomodoro" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> Pomodoro
+                </a>
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Calendar" ? "active" : "")" asp-controller="Calendar" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span> Calendário
+                </a>
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Notes" ? "active" : "")" asp-controller="Notes" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-note-sticky"></i></span> Notas
+                </a>
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Habits" ? "active" : "")" asp-controller="Habits" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-fire"></i></span> Hábitos
+                </a>
+                <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Finance" ? "active" : "")" asp-controller="Finance" asp-action="Index">
+                    <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span> Finanças
+                </a>
+
+                <div class="sidebar-bottom">
+                    <span class="nav-section-label">Sistema</span>
+                    <a class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Settings" ? "active" : "")" asp-controller="Settings" asp-action="Index">
+                        <span class="nav-icon"><i class="fa-solid fa-gear"></i></span> Configurações
+                    </a>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="nav-item">
+                            <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Sair
+                        </button>
+                    </form>
+                </div>
+            </nav>
+        }
+
+        <main class="main-content">
             @RenderBody()
         </main>
     </div>
@@ -38,6 +66,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.7/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/api.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

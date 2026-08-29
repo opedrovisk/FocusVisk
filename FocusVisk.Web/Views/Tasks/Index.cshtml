@@ -3,8 +3,10 @@
 }
 
 <div id="tasks-app">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Tarefas</h2>
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="page-title">Tarefas</div>
+        </div>
         <button class="btn btn-primary" @@click="openCreateModal">
             <i class="fa-solid fa-plus"></i> Nova tarefa
         </button>
@@ -14,30 +16,24 @@
         <div class="spinner-border" role="status"></div>
     </div>
 
-    <div v-else-if="tasks.length === 0" class="text-center py-5 text-muted">
+    <div v-else-if="tasks.length === 0" class="text-center py-5" style="color: var(--text-muted);">
         Nenhuma tarefa ainda. Crie a primeira!
     </div>
 
-    <div v-else class="list-group">
-        <div v-for="task in tasks" :key="task.id" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
-                <input type="checkbox" class="form-check-input" :checked="task.isCompleted" @@change="toggleComplete(task)" />
-                <span :class="{ 'text-decoration-line-through text-muted': task.isCompleted }">
-                    {{ task.title }}
-                </span>
-                <span class="badge" :class="priorityClass(task.priority)">{{ task.priority }}</span>
-            </div>
-            <div>
-                <button class="btn btn-sm btn-outline-light me-1" @@click="openEditModal(task)"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn btn-sm btn-outline-danger" @@click="remove(task)"><i class="fa-solid fa-trash"></i></button>
-            </div>
+    <div v-else class="task-list">
+        <div v-for="task in tasks" :key="task.id" class="todo-item" :class="{ done: task.isCompleted }">
+            <div class="todo-check" @@click="toggleComplete(task)"></div>
+            <span class="todo-title flex-grow-1">{{ task.title }}</span>
+            <span class="badge" :class="priorityBadgeClass(task.priority)">{{ task.priority }}</span>
+            <button class="btn btn-ghost btn-icon" @@click="openEditModal(task)"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-danger btn-icon" @@click="remove(task)"><i class="fa-solid fa-trash"></i></button>
         </div>
     </div>
 
-    <!-- Modal de criação/edição -->
+
     <div class="modal fade" id="taskModal" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content bg-dark text-white">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ editingTask ? 'Editar tarefa' : 'Nova tarefa' }}</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -45,15 +41,15 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Título</label>
-                        <input v-model="form.title" class="form-control" />
+                        <input v-model="form.title" class="input" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Descrição</label>
-                        <textarea v-model="form.description" class="form-control"></textarea>
+                        <textarea v-model="form.description" class="textarea"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Prioridade</label>
-                        <select v-model="form.priority" class="form-select">
+                        <select v-model="form.priority" class="select">
                             <option value="Low">Baixa</option>
                             <option value="Medium">Média</option>
                             <option value="High">Alta</option>
@@ -61,11 +57,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Data de vencimento</label>
-                        <input v-model="form.dueDate" type="date" class="form-control" />
+                        <input v-model="form.dueDate" type="date" class="input" />
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-ghost" data-bs-dismiss="modal">Cancelar</button>
                     <button class="btn btn-primary" @@click="save">Salvar</button>
                 </div>
             </div>
@@ -74,7 +70,6 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script>
         const { createApp } = Vue;
 
@@ -104,8 +99,8 @@
                         this.loading = false;
                     }
                 },
-                priorityClass(priority) {
-                    return { Low: 'bg-secondary', Medium: 'bg-warning text-dark', High: 'bg-danger' }[priority] || 'bg-secondary';
+                priorityBadgeClass(priority) {
+                    return { Low: 'badge-ghost', Medium: 'badge-amber', High: 'badge-coral' }[priority] || 'badge-ghost';
                 },
                 openCreateModal() {
                     this.editingTask = null;

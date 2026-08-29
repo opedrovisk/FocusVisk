@@ -86,7 +86,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWeb", policy =>
-        policy.WithOrigins("https://localhost:7000") 
+        policy.WithOrigins("https://localhost:7199") 
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
