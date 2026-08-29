@@ -1,8 +1,5 @@
-using FocusVisk.Application.Services.Task;
-using FocusVisk.Core.Interfaces;
 using FocusVisk.Infrastructure.Data;
 using FocusVisk.Infrastructure.Identity;
-using FocusVisk.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,10 +20,7 @@ builder.Services
 
 builder.Services.AddAutoMapper(cfg => { }, typeof(FocusVisk.Application.AssemblyReference).Assembly);
 
-builder.Services.AddScoped<ITodoRepository, TodoRepository>();
-builder.Services.AddScoped<ITaskService, TaskService>();
-
-builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 builder.Services.AddControllersWithViews();
 
@@ -52,6 +46,6 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// app.MapHub<NotificationHub>("/hubs/notifications"); 
+// app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

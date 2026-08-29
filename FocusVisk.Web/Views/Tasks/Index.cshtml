@@ -1,0 +1,170 @@
+﻿@{
+    ViewData["Title"] = "Tarefas";
+}
+
+<div id="tasks-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Tarefas</h2>
+        <button class="btn btn-primary" @@click="openCreateModal">
+            <i class="fa-solid fa-plus"></i> Nova tarefa
+        </button>
+    </div>
+
+    <div v-if="loading" class="text-center py-5">
+        <div class="spinner-border" role="status"></div>
+    </div>
+
+    <div v-else-if="tasks.length === 0" class="text-center py-5 text-muted">
+        Nenhuma tarefa ainda. Crie a primeira!
+    </div>
+
+    <div v-else class="list-group">
+        <div v-for="task in tasks" :key="task.id" class="list-group-item bg-dark text-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <input type="checkbox" class="form-check-input" :checked="task.isCompleted" @@change="toggleComplete(task)" />
+                <span :class="{ 'text-decoration-line-through text-muted': task.isCompleted }">
+                    {{ task.title }}
+                </span>
+                <span class="badge" :class="priorityClass(task.priority)">{{ task.priority }}</span>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-light me-1" @@click="openEditModal(task)"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-sm btn-outline-danger" @@click="remove(task)"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de criação/edição -->
+    <div class="modal fade" id="taskModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ editingTask ? 'Editar tarefa' : 'Nova tarefa' }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input v-model="form.title" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea v-model="form.description" class="form-control"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Prioridade</label>
+                        <select v-model="form.priority" class="form-select">
+                            <option value="Low">Baixa</option>
+                            <option value="Medium">Média</option>
+                            <option value="High">Alta</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Data de vencimento</label>
+                        <input v-model="form.dueDate" type="date" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" @@click="save">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    tasks: [],
+                    loading: true,
+                    editingTask: null,
+                    form: { title: '', description: '', priority: 'Medium', dueDate: '' },
+                    modal: null
+                };
+            },
+            async mounted() {
+                this.modal = new bootstrap.Modal(document.getElementById('taskModal'));
+                await this.loadTasks();
+            },
+            methods: {
+                async loadTasks() {
+                    this.loading = true;
+                    try {
+                        const response = await api.get('/tasks');
+                        this.tasks = response.data;
+                    } catch (err) {
+                        Swal.fire('Erro', 'Não foi possível carregar as tarefas.', 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                priorityClass(priority) {
+                    return { Low: 'bg-secondary', Medium: 'bg-warning text-dark', High: 'bg-danger' }[priority] || 'bg-secondary';
+                },
+                openCreateModal() {
+                    this.editingTask = null;
+                    this.form = { title: '', description: '', priority: 'Medium', dueDate: '' };
+                    this.modal.show();
+                },
+                openEditModal(task) {
+                    this.editingTask = task;
+                    this.form = {
+                        title: task.title,
+                        description: task.description || '',
+                        priority: task.priority,
+                        dueDate: task.dueDate ? task.dueDate.split('T')[0] : ''
+                    };
+                    this.modal.show();
+                },
+                async save() {
+                    try {
+                        if (this.editingTask) {
+                            await api.put(`/tasks/${this.editingTask.id}`, {
+                                ...this.form,
+                                isCompleted: this.editingTask.isCompleted
+                            });
+                        } else {
+                            await api.post('/tasks', this.form);
+                        }
+                        this.modal.hide();
+                        await this.loadTasks();
+                    } catch (err) {
+                        Swal.fire('Erro', 'Não foi possível salvar a tarefa.', 'error');
+                    }
+                },
+                async toggleComplete(task) {
+                    try {
+                        await api.patch(`/tasks/${task.id}/complete`);
+                        await this.loadTasks();
+                    } catch (err) {
+                        Swal.fire('Erro', 'Não foi possível atualizar a tarefa.', 'error');
+                    }
+                },
+                async remove(task) {
+                    const result = await Swal.fire({
+                        title: 'Excluir tarefa?',
+                        text: task.title,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Excluir',
+                        cancelButtonText: 'Cancelar'
+                    });
+                    if (!result.isConfirmed) return;
+
+                    try {
+                        await api.delete(`/tasks/${task.id}`);
+                        await this.loadTasks();
+                    } catch (err) {
+                        Swal.fire('Erro', 'Não foi possível excluir a tarefa.', 'error');
+                    }
+                }
+            }
+        }).mount('#tasks-app');
+    </script>
+}

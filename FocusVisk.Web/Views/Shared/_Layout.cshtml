@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FocusVisk</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="d-flex">
+        <nav class="sidebar bg-dark text-white p-3" style="width:240px; min-height:100vh;">
+            <h4 class="mb-4">FocusVisk</h4>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <ul class="nav flex-column gap-2">
+                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Tasks" asp-action="Index"><i class="fa-solid fa-list-check"></i> Tarefas</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Habits" asp-action="Index"><i class="fa-solid fa-repeat"></i> Hábitos</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Finance" asp-action="Index"><i class="fa-solid fa-wallet"></i> Finanças</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Notes" asp-action="Index"><i class="fa-solid fa-note-sticky"></i> Notas</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Calendar" asp-action="Index"><i class="fa-solid fa-calendar"></i> Calendário</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" asp-controller="Pomodoro" asp-action="Index"><i class="fa-solid fa-clock"></i> Pomodoro</a></li>
+                </ul>
+                <hr class="text-white-50" />
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-light w-100">Sair</button>
+                </form>
+            }
+        </nav>
+
+        <main class="flex-grow-1 p-4">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.7/sweetalert2.all.min.js"></script>
+    <script src="~/js/api.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
