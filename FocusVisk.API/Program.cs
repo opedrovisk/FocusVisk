@@ -1,9 +1,9 @@
 using FocusVisk.Application.Services;
 using FocusVisk.Application.Services.Calendar;
 using FocusVisk.Application.Services.Finance;
-using FocusVisk.Application.Services.Habit;
+using FocusVisk.Application.Services.Habits;
 using FocusVisk.Application.Services.Note;
-using FocusVisk.Application.Services.Task;
+using FocusVisk.Application.Services.Tasks;
 using FocusVisk.Core.Interfaces;
 using FocusVisk.Infrastructure.Data;
 using FocusVisk.Infrastructure.Identity;
@@ -75,6 +75,8 @@ builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 
+builder.Services.AddScoped<IImportService, ImportService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -86,7 +88,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowWeb", policy =>
-        policy.WithOrigins("https://localhost:7199") 
+        policy.WithOrigins("https://localhost:7199")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());

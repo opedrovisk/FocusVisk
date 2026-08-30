@@ -3,7 +3,7 @@ using FocusVisk.Application.DTOs;
 using FocusVisk.Core.Interfaces;
 using FocusVisk.Core.Models;
 
-namespace FocusVisk.Application.Services.Task;
+namespace FocusVisk.Application.Services.Tasks;
 
 public class TaskService : ITaskService
 {

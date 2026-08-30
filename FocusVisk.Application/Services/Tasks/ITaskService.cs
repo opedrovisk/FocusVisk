@@ -1,6 +1,6 @@
 ﻿using FocusVisk.Application.DTOs;
 
-namespace FocusVisk.Application.Services.Task;
+namespace FocusVisk.Application.Services.Tasks;
 
 public interface ITaskService
 {

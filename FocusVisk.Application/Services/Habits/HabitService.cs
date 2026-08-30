@@ -1,9 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FocusVisk.Application.DTOs;
 using FocusVisk.Core.Interfaces;
-using CoreModels = FocusVisk.Core.Models;
+using FocusVisk.Core.Models;
 
-namespace FocusVisk.Application.Services.Habit;
+namespace FocusVisk.Application.Services.Habits;
 
 public class HabitService : IHabitService
 {
@@ -24,7 +24,7 @@ public class HabitService : IHabitService
 
     public async Task<HabitDto> CreateAsync(string userId, HabitCreateDto dto)
     {
-        var habit = _mapper.Map<CoreModels.Habit>(dto);
+        var habit = _mapper.Map<Habit>(dto);
         habit.UserId = userId;
         habit.CreatedAt = DateTime.UtcNow;
 
@@ -69,7 +69,7 @@ public class HabitService : IHabitService
         return await _repository.ToggleLogAsync(habitId, date);
     }
 
-    private static HabitDto MapWithStreak(CoreModels.Habit habit)
+    private static HabitDto MapWithStreak(Habit habit)
     {
         return new HabitDto
         {

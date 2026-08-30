@@ -1,6 +1,6 @@
-﻿using FocusVisk.Application.DTOs;
+using FocusVisk.Application.DTOs;
 
-namespace FocusVisk.Application.Services.Habit;
+namespace FocusVisk.Application.Services.Habits;
 
 public interface IHabitService
 {
