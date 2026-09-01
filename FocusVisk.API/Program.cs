@@ -28,6 +28,7 @@ builder.Services
         options.User.RequireUniqueEmail = true;
     })
     .AddEntityFrameworkStores<AppDbContext>()
+    .AddErrorDescriber<PortugueseIdentityErrorDescriber>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options =>
@@ -76,6 +77,7 @@ builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 
 builder.Services.AddScoped<IImportService, ImportService>();
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

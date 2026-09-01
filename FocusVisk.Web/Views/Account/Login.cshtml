@@ -1,25 +1,114 @@
 ﻿@{
     ViewData["Title"] = "Entrar";
-    Layout = "_LayoutAuth"; 
+    Layout = "_LayoutAuth";
 }
-<div class="card mx-auto mt-5" style="max-width:400px;">
-    <div class="card-body">
-        <h3 class="mb-4">Entrar no FocusVisk</h3>
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="alert alert-danger" asp-validation-summary="All"></div>
-        }
-        <form method="post">
-            <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input type="email" name="email" class="form-control" required />
+
+<div class="auth-shell">
+    <div class="auth-brand">
+        <div class="auth-logo">Focus<span>Visk</span></div>
+        <div class="auth-brand-content">
+            <div class="auth-brand-title">Organize sua rotina, da melhor maneira possível.</div>
+            <div class="auth-brand-subtitle">Tarefas, hábitos, finanças e foco, sincronizados com o seu cotidiano.</div>
+        </div>
+        <div class="auth-brand-footer">© 2026 FocusVisk</div>
+    </div>
+
+    <div class="auth-form-panel">
+        <div class="auth-card">
+            <div class="auth-title">Bem-vindo de volta</div>
+            <div class="auth-subtitle">Entre com sua conta para continuar</div>
+            <form id="loginForm" novalidate>
+                <div class="auth-field">
+                    <label class="auth-label">Email</label>
+                    <div class="auth-input-wrap">
+                        <i class="fa-solid fa-envelope icon-left"></i>
+                        <input type="email" id="email" class="auth-input" placeholder="voce@email.com" autocomplete="email" />
+                    </div>
+                </div>
+                <div class="auth-field">
+                    <label class="auth-label">Senha</label>
+                    <div class="auth-input-wrap">
+                        <i class="fa-solid fa-lock icon-left"></i>
+                        <input type="password" id="password" class="auth-input" placeholder="••••••••" autocomplete="current-password" />
+                        <button type="button" class="auth-toggle-pw" onclick="togglePassword('password', this)">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-btn" id="submitBtn">
+                    <span id="btnText">Entrar</span>
+                </button>
+            </form>
+
+            <div class="auth-switch">
+                Ainda não tem conta? <a asp-action="Register">Criar conta</a>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Senha</label>
-                <input type="password" name="password" class="form-control" required />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Entrar</button>
-        </form>
-        <p class="mt-3 text-center"><a asp-action="Register">Criar conta</a></p>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function togglePassword(id, btn) {
+            const input = document.getElementById(id);
+            const icon = btn.querySelector('i');
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        }
+
+        function showToast(message, icon = 'error') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon,
+                title: message,
+                showConfirmButton: false,
+                timer: 3500,
+                timerProgressBar: true,
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-primary)'
+            });
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+
+            if (!email || !password) {
+                showToast('Preencha email e senha.');
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="auth-spinner"></span>';
+
+            try {
+                const response = await fetch('/Account/Login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ email, password })
+                });
+
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return;
+                }
+
+                const text = await response.text();
+                showToast('Email ou senha inválidos.');
+            } catch (err) {
+                showToast('Não foi possível conectar. Tente novamente.');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Entrar';
+            }
+        });
+    </script>
+}
